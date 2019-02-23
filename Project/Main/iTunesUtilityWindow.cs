@@ -310,8 +310,8 @@ namespace iTunesUtility {
 			m_listView1.VirtualListSize = _item.Length;
 		}
 
-		private void 未評価を検出するToolStripMenuItem_Click( object sender, EventArgs e ) {
-			_item = m_TrackInfo.Where( x => x.Rating == 0 ).Select( x => new ListViewItem( x.GetItemString() ) ).ToArray();
+		private void 未評価を検出するToolStripMenuItem_Click( object sender = null, EventArgs e = null ) {
+			_item = m_TrackInfo.Where( x => 5 < x.AlbumRating || x.AlbumRating == 0 ).Select( x => new ListViewItem( x.GetItemString() ) ).ToArray();
 			m_listView1.VirtualListSize = _item.Length;
 		}
 
@@ -344,12 +344,13 @@ namespace iTunesUtility {
 			SelectProcess( ( i, j ) => {
 				var t = m_TrackInfo[ j ];
 				if( 0 != ( t.ModifyFlag & TrackInfo.Modify.AlbumRating ) ) {
-					iTunesHelper.Track( j ).AlbumRating = t.AlbumRating; ;
+					iTunesHelper.Track( j ).AlbumRating = t.AlbumRating;
 				}
 				m_TrackInfo[ j ].ModifyFlag = 0;
 				_item[ i ] = new ListViewItem( m_TrackInfo[ j ].GetItemString() );
 				_item[ i ].BackColor = Color.White;
 			} );
+			未評価を検出するToolStripMenuItem_Click();
 		}
 
 

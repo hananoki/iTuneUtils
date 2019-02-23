@@ -34,6 +34,7 @@
 			this.m_listView1 = new System.Windows.Forms.ListView();
 			this.columnIndex = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
 			this.columnAlbum = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+			this.columnAlbumRating = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
 			this.columnDurarion = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
 			this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
 			this.columnArtist = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -42,6 +43,7 @@
 			this.columnHeader9 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
 			this.columnHeader4 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
 			this.columnComment = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+			this.columnGenre = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
 			this.columnRating = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
 			this.columnHeader10 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
 			this.columnHeader11 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -50,6 +52,7 @@
 			this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
 			this.表示ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.色替えToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.アルバムレーティングを1に設定するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.statusStrip1 = new System.Windows.Forms.StatusStrip();
 			this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
 			this.toolStripProgressBar1 = new System.Windows.Forms.ToolStripProgressBar();
@@ -57,13 +60,10 @@
 			this.ToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
 			this.ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.ツールToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.全て表示するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.デッドリンクを検出するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.未設定のアートワークを検出するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.未評価を検出するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.全て表示するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.columnAlbumRating = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-			this.columnGenre = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-			this.アルバムレーティングを1に設定するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
 			this.splitContainer1.Panel2.SuspendLayout();
 			this.splitContainer1.SuspendLayout();
@@ -129,6 +129,10 @@
 			// 
 			this.columnAlbum.Text = "アルバム";
 			// 
+			// columnAlbumRating
+			// 
+			this.columnAlbumRating.Text = "アルバムレーティング";
+			// 
 			// columnDurarion
 			// 
 			this.columnDurarion.Text = "時間";
@@ -164,6 +168,10 @@
 			// 
 			this.columnComment.Text = "コメント";
 			// 
+			// columnGenre
+			// 
+			this.columnGenre.Text = "ジャンル";
+			// 
 			// columnRating
 			// 
 			this.columnRating.Text = "評価";
@@ -192,13 +200,13 @@
             this.色替えToolStripMenuItem,
             this.アルバムレーティングを1に設定するToolStripMenuItem});
 			this.contextMenuStrip1.Name = "contextMenuStrip1";
-			this.contextMenuStrip1.Size = new System.Drawing.Size(231, 92);
+			this.contextMenuStrip1.Size = new System.Drawing.Size(231, 70);
 			// 
 			// 表示ToolStripMenuItem
 			// 
 			this.表示ToolStripMenuItem.Name = "表示ToolStripMenuItem";
-			this.表示ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-			this.表示ToolStripMenuItem.Text = "iTuneから読み込む";
+			this.表示ToolStripMenuItem.Size = new System.Drawing.Size(230, 22);
+			this.表示ToolStripMenuItem.Text = "iTunesから読み込む";
 			this.表示ToolStripMenuItem.Click += new System.EventHandler(this.表示ToolStripMenuItem_Click);
 			// 
 			// 色替えToolStripMenuItem
@@ -207,6 +215,13 @@
 			this.色替えToolStripMenuItem.Size = new System.Drawing.Size(230, 22);
 			this.色替えToolStripMenuItem.Text = "iTunesに反映する";
 			this.色替えToolStripMenuItem.Click += new System.EventHandler(this.iTunesに反映するToolStripMenuItem_Click_1);
+			// 
+			// アルバムレーティングを1に設定するToolStripMenuItem
+			// 
+			this.アルバムレーティングを1に設定するToolStripMenuItem.Name = "アルバムレーティングを1に設定するToolStripMenuItem";
+			this.アルバムレーティングを1に設定するToolStripMenuItem.Size = new System.Drawing.Size(230, 22);
+			this.アルバムレーティングを1に設定するToolStripMenuItem.Text = "アルバムレーティングを1に設定する";
+			this.アルバムレーティングを1に設定するToolStripMenuItem.Click += new System.EventHandler(this.アルバムレーティングを1に設定するToolStripMenuItem_Click);
 			// 
 			// statusStrip1
 			// 
@@ -246,8 +261,8 @@
 			// 
 			this.ToolStripMenuItem1.Image = ((System.Drawing.Image)(resources.GetObject("ToolStripMenuItem1.Image")));
 			this.ToolStripMenuItem1.Name = "ToolStripMenuItem1";
-			this.ToolStripMenuItem1.Size = new System.Drawing.Size(96, 20);
-			this.ToolStripMenuItem1.Text = "iTuneに接続";
+			this.ToolStripMenuItem1.Size = new System.Drawing.Size(101, 20);
+			this.ToolStripMenuItem1.Text = "iTunesに接続";
 			this.ToolStripMenuItem1.Click += new System.EventHandler(this.ToolStripMenuItem1_Click);
 			// 
 			// ToolStripMenuItem
@@ -271,6 +286,13 @@
 			this.ツールToolStripMenuItem.Size = new System.Drawing.Size(62, 20);
 			this.ツールToolStripMenuItem.Text = "ツール";
 			// 
+			// 全て表示するToolStripMenuItem
+			// 
+			this.全て表示するToolStripMenuItem.Name = "全て表示するToolStripMenuItem";
+			this.全て表示するToolStripMenuItem.Size = new System.Drawing.Size(249, 22);
+			this.全て表示するToolStripMenuItem.Text = "全て表示する";
+			this.全て表示するToolStripMenuItem.Click += new System.EventHandler(this.全て表示するToolStripMenuItem_Click);
+			// 
 			// デッドリンクを検出するToolStripMenuItem
 			// 
 			this.デッドリンクを検出するToolStripMenuItem.Name = "デッドリンクを検出するToolStripMenuItem";
@@ -292,29 +314,7 @@
 			this.未評価を検出するToolStripMenuItem.Text = "不要なアルバムレーティングを検出する";
 			this.未評価を検出するToolStripMenuItem.Click += new System.EventHandler(this.未評価を検出するToolStripMenuItem_Click);
 			// 
-			// 全て表示するToolStripMenuItem
-			// 
-			this.全て表示するToolStripMenuItem.Name = "全て表示するToolStripMenuItem";
-			this.全て表示するToolStripMenuItem.Size = new System.Drawing.Size(249, 22);
-			this.全て表示するToolStripMenuItem.Text = "全て表示する";
-			this.全て表示するToolStripMenuItem.Click += new System.EventHandler(this.全て表示するToolStripMenuItem_Click);
-			// 
-			// columnAlbumRating
-			// 
-			this.columnAlbumRating.Text = "アルバムレーティング";
-			// 
-			// columnGenre
-			// 
-			this.columnGenre.Text = "ジャンル";
-			// 
-			// アルバムレーティングを1に設定するToolStripMenuItem
-			// 
-			this.アルバムレーティングを1に設定するToolStripMenuItem.Name = "アルバムレーティングを1に設定するToolStripMenuItem";
-			this.アルバムレーティングを1に設定するToolStripMenuItem.Size = new System.Drawing.Size(230, 22);
-			this.アルバムレーティングを1に設定するToolStripMenuItem.Text = "アルバムレーティングを1に設定する";
-			this.アルバムレーティングを1に設定するToolStripMenuItem.Click += new System.EventHandler(this.アルバムレーティングを1に設定するToolStripMenuItem_Click);
-			// 
-			// iTuneUtilsWindow
+			// iTunesUtilityWindow
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -324,8 +324,8 @@
 			this.Controls.Add(this.menuStrip1);
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.MainMenuStrip = this.menuStrip1;
-			this.Name = "iTuneUtilsWindow";
-			this.Text = "iTuneUtils";
+			this.Name = "iTunesUtilityWindow";
+			this.Text = "iTunesUtils";
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
 			this.Load += new System.EventHandler(this.Form1_Load);
 			this.splitContainer1.Panel2.ResumeLayout(false);
