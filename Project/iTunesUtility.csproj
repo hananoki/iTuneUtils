@@ -60,6 +60,13 @@
     <Compile Include="CsLib\JsonUtils.cs" />
     <Compile Include="CsLib\StringExtensions.cs" />
     <Compile Include="CsLib\Win32.cs" />
+    <Compile Include="Log\Log.cs" />
+    <Compile Include="Log\LogWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Log\LogWindow.Designer.cs">
+      <DependentUpon>LogWindow.cs</DependentUpon>
+    </Compile>
     <Compile Include="Main\Config.cs" />
     <Compile Include="Main\Extension.cs" />
     <Compile Include="Main\iTunesHelper.cs" />
@@ -72,6 +79,9 @@
     <Compile Include="Main\Program.cs" />
     <Compile Include="Main\TrackInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Log\LogWindow.resx">
+      <DependentUpon>LogWindow.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Main\iTunesUtilityWindow.resx">
       <DependentUpon>iTunesUtilityWindow.cs</DependentUpon>
     </EmbeddedResource>
@@ -113,5 +123,6 @@
   <ItemGroup>
     <Content Include="itunes_music_14593.ico" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

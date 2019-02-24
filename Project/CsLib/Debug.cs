@@ -22,6 +22,7 @@ namespace CsLib {
 #if TRACE
 			if( string.IsNullOrEmpty( m ) ) return;
 			Console.WriteLine( string.Format( m, args ) );
+			CsLib.Log.Info( string.Format( m, args ) );
 #endif
 		}
 	}
