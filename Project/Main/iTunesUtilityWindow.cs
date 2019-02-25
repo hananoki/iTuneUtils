@@ -26,6 +26,9 @@ namespace iTunesUtility {
 		Config m_config;
 		Color m_CtrlColor;
 
+		int m_filterMode;
+
+
 		public static string m_iTunesLibraryPath {
 			get {
 				return $"{Helper.m_appPath}\\iTunes Library.json";
@@ -40,6 +43,8 @@ namespace iTunesUtility {
 			InitializeComponent();
 			iTunesHelper.ActiveEvent += iTunesActiveEvent;
 			m_config = new Config();
+
+			
 		}
 
 
@@ -52,12 +57,13 @@ namespace iTunesUtility {
 		/// iTuneから情報を取得します
 		/// </summary>
 		void ImportMusicLibrary() {
-			
-			ShowStatus( true );
+			iTunesHelper.Attach();	
+
+			ShowStatusbarControl( true, "インポート中" );
 
 			TraverseLibrary();
 
-			ShowStatus( false );
+			ShowStatusbarControl( false );
 
 			WriteMusicLibraryJson();
 
@@ -69,25 +75,26 @@ namespace iTunesUtility {
 		/// ライブラリからトラック情報を取得する
 		/// </summary>
 		void TraverseLibrary() {
-			var mainLibrary = iTunesHelper.GetApp().LibraryPlaylist;
-			var tracks = mainLibrary.Tracks;
-			//var numTracks = tracks.Count;
-			int i = 0;
-			int m = tracks.Count;
+			//var mainLibrary = iTunesHelper.GetApp().LibraryPlaylist;
+			//var tracks = mainLibrary.Tracks;
+			var numTracks = iTunesHelper.Tracks.Count;
+			//int i = 0;
+			//int m = tracks.Count;
 
-			m_TrackInfo = new TrackInfo[ tracks.Count ];
+			m_TrackInfo = new TrackInfo[ numTracks ];
 
 			var sw = new System.Diagnostics.Stopwatch();
 			sw.Start();
 
-			float f = 100.0f / (float) (tracks.Count);
+			float f = 100.0f / (float) ( numTracks );
 			float ff = 0.0f;
 			//*
-			Parallel.For( 0, tracks.Count, Helper.m_parallelOptions, cnt => {
-				try {
+			Parallel.For( 0, numTracks, Helper.m_parallelOptions, cnt => {
+			try {
 					if( cnt == 0 ) return;
-						int cc = cnt;
-					m_TrackInfo[ cc ] = new TrackInfo( cnt, tracks[ cc ] );
+					int cc = cnt;
+					var t = iTunesHelper.Tracks[ cc ];
+					m_TrackInfo[ cc ] = new TrackInfo( cnt, t );
 					this.Invoke( new Action( () => {
 						//i++;
 						ff += f;
@@ -96,6 +103,7 @@ namespace iTunesUtility {
 						}
 						toolStripProgressBar1.Value = (int) ff;
 					} ) );
+					Marshal.ReleaseComObject( t );
 				}
 				catch( Exception ) {
 				}
@@ -105,8 +113,6 @@ namespace iTunesUtility {
 			sw.Stop();
 			TimeSpan ts = sw.Elapsed;
 			Debug.Log( ts.ToString() );
-
-			
 		}
 
 
@@ -117,8 +123,21 @@ namespace iTunesUtility {
 			Invoke( new Action( () => {
 				Log.Info( $"トラック数: {m_TrackInfo.Length}" );
 
-				m_listView1.VirtualListSize = m_TrackInfo.Length;
-				_item = m_TrackInfo.Select( x => new ListViewItem( x.GetItemString() ) ).ToArray();
+				if( m_filterMode == 1 ) {
+					// デッドリンクを検出する
+					デッドリンクを検出する();
+				}
+				else if( m_filterMode == 2 ) {
+					未設定のアートワークを検出する();
+				}
+				else if( m_filterMode == 3 ) {
+					不要なアルバムレーティングを検出する();
+				}
+				else {
+					_item = m_TrackInfo.Select( x => new ListViewItem( x.GetItemString() ) ).ToArray();
+					ArrayUtility.RemoveAt(ref _item , 0);
+					m_listView1.VirtualListSize = _item.Length;
+				}
 
 				// ModifyFlagが設定された要素のみのインデックス配列を作成
 				var idd = m_TrackInfo.Select( ( x, i ) => {
@@ -145,23 +164,14 @@ namespace iTunesUtility {
 		/// 
 		/// </summary>
 		/// <param name="b"></param>
-		void ShowStatus( bool b ) {
+		void ShowStatusbarControl( bool b, string text = null ) {
 			Invoke( new Action( () => {
 				toolStripStatusLabel1.Visible = b;
 				toolStripProgressBar1.Visible = b;
+				if( !string.IsNullOrEmpty(text) ) toolStripStatusLabel1.Text = text;
 			} ) );
 		}
 
-
-		/// <summary>
-		/// 引数が示すindexのアイテムを返すと描画される
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		void listView1_RetrieveVirtualItem( object sender, RetrieveVirtualItemEventArgs e ) {
-			if( _item == null ) return;
-			e.Item = _item[ e.ItemIndex ];
-		}
 
 
 		/// <summary>
@@ -169,14 +179,18 @@ namespace iTunesUtility {
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
-		private void Form1_Load( object sender, EventArgs e ) {
+		private void Form1_Load( object a1, EventArgs a2 ) {
 			Font = SystemFonts.IconTitleFont;
 
 			m_listView1.SetDoubleBuffered( true );
 			listViewItemCollection = new ListView.ListViewItemCollection( m_listView1 );
 			listViewItemSelection = new ListView.SelectedIndexCollection( m_listView1 );
-			m_listView1.RetrieveVirtualItem += new RetrieveVirtualItemEventHandler( listView1_RetrieveVirtualItem );
-			ShowStatus( false );
+			m_listView1.RetrieveVirtualItem += new RetrieveVirtualItemEventHandler( ( s ,e ) => {
+				if( _item == null ) return;
+				e.Item = _item[ e.ItemIndex ];
+			} );
+			
+			ShowStatusbarControl( false );
 			m_CtrlColor = ToolStripMenuItem1.BackColor;
 
 			var b = Helper.ReadJson<TrackInfo[]>( ref m_TrackInfo, m_iTunesLibraryPath );
@@ -193,7 +207,8 @@ namespace iTunesUtility {
 			m_config.RollbackWindow( this );
 
 			iTunesActiveEvent();
-			
+
+			SetCheckedFillter( 0 );
 		}
 
 
@@ -223,47 +238,33 @@ namespace iTunesUtility {
 			splitContainer1.SplitterDistance = 0;
 		}
 
-		int selectIndex {
-			get {
+		//int selectIndex {
+		//	get {
+		//		if( listViewItemSelection.Count > 0 ) {
+		//			foreach( int index in listViewItemSelection ) {
+		//				return index;
+		//			}
+		//		}
+		//		return 0;
+		//	}
+		//}
+
+
+		/// <summary>
+		/// 現在選択されている項目をm_TrackInfoでのインデックス番号として取得する
+		/// </summary>
+		/// <returns></returns>
+		int[] MakeSelectIndexArray() {
+			var lst = new List<int>();
+			Invoke( new Action( () => {
 				if( listViewItemSelection.Count > 0 ) {
 					foreach( int index in listViewItemSelection ) {
-						return index;
+						lst.Add( _item[ index ].SubItems[ 0 ].Text.toInt32() );
 					}
 				}
-				return 0;
-			}
+			} ) );
+			return lst.ToArray();
 		}
-
-		void SelectProcess( Action<int,int> action ) {
-			if( listViewItemSelection.Count > 0 ) {
-				foreach( int index in listViewItemSelection ) {
-					action( index, _item[ index ].SubItems[ 0 ].Text.toInt32() );
-				}
-			}
-		}
-
-		//private void 表示ToolStripMenuItem_Click( object sender, EventArgs e ) {
-		//	if( listViewItemSelection.Count > 0 ) {
-		//		var mainLibrary = iTunesHelper.GetApp().LibraryPlaylist;
-		//		var tracks = mainLibrary.Tracks;
-
-		//		Debug.Log( "---- ListViewItem Selection ----" );
-		//		foreach( int index in listViewItemSelection ) {
-		//			//Debug.Log( $"index = {index.ToString()}" );
-
-		//			Debug.Log( tracks[ index ].Name );
-		//		}
-		//	}
-		//}
-
-		//private void m_listView1_SelectedIndexChanged( object sender, EventArgs e ) {
-		//	if( listViewItemSelection.Count > 0 ) {
-		//		Debug.Log( "---- ListViewItem Selection ----" );
-		//		foreach( Int32 index in listViewItemSelection ) {
-		//			Debug.Log( $"index = {index.ToString()}" );
-		//		}
-		//	}
-		//}
 
 
 		void iTunesActiveEvent() {
@@ -289,13 +290,16 @@ namespace iTunesUtility {
 				iTunesHelper.Attach();
 			}
 		}
+		
 
-		private void 色替えToolStripMenuItem_Click( object sender, EventArgs e ) {
-			_item[ selectIndex ].SubItems[1].BackColor = Color.Pink;
-		}
-
+		/// <summary>
+		/// カラムクリック
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
 		private void m_listView1_ColumnClick( object sender, ColumnClickEventArgs e ) {
 			int clm = (int) e.Column;
+			
 			Array.Sort( _item , (x,y)=> {
 				if( 13 == clm ) {
 					if( x.SubItems[ clm ].Text.toInt32() == y.SubItems[ clm ].Text.toInt32() ) return 0;
@@ -315,9 +319,11 @@ namespace iTunesUtility {
 		/// <param name="e"></param>
 		private void m_listView1_DoubleClick( object sender, EventArgs e ) {
 			iTunesHelper.Attach();
+			var idxs = MakeSelectIndexArray();
+			if( idxs.Length == 0 ) return;
 			//var t = iTunesHelper.Track( _item[ selectIndex ].ID() );
 			//var tracks = iTunesHelper.mainLibrary.Tracks;
-			var t = iTunesHelper.tracks[ _item[ selectIndex ].ID() ];
+			var t = iTunesHelper.tracks[ idxs[0] ];
 			t.Play();
 			Marshal.ReleaseComObject( t );
 			t = null;
@@ -326,66 +332,177 @@ namespace iTunesUtility {
 		}
 
 
+		private void ログToolStripMenuItem_Click( object sender, EventArgs e ) {
+			LogWindow.Visible = true;
+		}
+
+		#region フィルター
+
+		void SetCheckedFillter( int n ) {
+			ToolStripMenuItem[] tbl = {
+				全て表示するToolStripMenuItem,
+				デッドリンクを検出するToolStripMenuItem,
+				未設定のアートワークを検出するToolStripMenuItem,
+				不要なアルバムレーティングを検出するToolStripMenuItem
+			};
+			for( int i = 0; i < tbl.Length; i++ ) {
+				var t = tbl[ i ];
+				if( i == n ) {
+					t.Checked = true;
+				}
+				else {
+					t.Checked = false;
+				}
+			}
+			m_filterMode = n;
+		}
+
+		private void 全て表示する( object sender, EventArgs e ) {
+			_item = m_TrackInfo.Select( x => new ListViewItem( x.GetItemString() ) ).ToArray();
+			ArrayUtility.RemoveAt( ref _item, 0 );
+			m_listView1.VirtualListSize = _item.Length;
+			SetCheckedFillter( 0 );
+		}
+
 		private void デッドリンクを検出する( object sender = null, EventArgs e = null ) {
 			ListViewItem[] _item2 = m_TrackInfo.Where( x => !File.Exists( x.Location ) ).Select( x => new ListViewItem( x.GetItemString() ) ).ToArray();
 			if( _item2.Length == 0 ) {
 				Debug.Log( "デッドリンクはありません" );
 			}
 			_item = _item2;
+			ArrayUtility.RemoveAt( ref _item, 0 );
 			m_listView1.VirtualListSize = _item.Length;
+			SetCheckedFillter( 1 );
 		}
 
-		private void 未設定のアートワークを検出するToolStripMenuItem_Click( object sender, EventArgs e ) {
+		private void 未設定のアートワークを検出する( object sender = null, EventArgs e = null ) {
 			_item = m_TrackInfo.Where( x => x.ArtworkNum == 0 ).Select( x => new ListViewItem( x.GetItemString() ) ).ToArray();
+			ArrayUtility.RemoveAt( ref _item, 0 );
 			m_listView1.VirtualListSize = _item.Length;
+			SetCheckedFillter( 2 );
 		}
 
-		private void 未評価を検出するToolStripMenuItem_Click( object sender = null, EventArgs e = null ) {
+		private void 不要なアルバムレーティングを検出する( object sender = null, EventArgs e = null ) {
 			_item = m_TrackInfo.Where( x => 5 < x.AlbumRating || x.AlbumRating == 0 ).Select( x => new ListViewItem( x.GetItemString() ) ).ToArray();
+			ArrayUtility.RemoveAt( ref _item, 0 );
 			m_listView1.VirtualListSize = _item.Length;
+			SetCheckedFillter( 3 );
 		}
 
-		private void 全て表示するToolStripMenuItem_Click( object sender, EventArgs e ) {
-			_item = m_TrackInfo.Select( x => new ListViewItem( x.GetItemString() ) ).ToArray();
-			m_listView1.VirtualListSize = _item.Length;
-		}
+		#endregion
 
-		private void 表示ToolStripMenuItem_Click( object sender, EventArgs e ) {
-			SelectProcess( ( i, j ) => {
-				m_TrackInfo[ j ] = new TrackInfo( j, iTunesHelper.Track( j ) );
-				_item[ i ] = new ListViewItem( m_TrackInfo[ j ].GetItemString() );
-			} );
-			m_listView1.Refresh();
-			WriteMusicLibraryJson();
-		}
 
-		private void アルバムレーティングを1に設定するToolStripMenuItem_Click( object sender, EventArgs e ) {
-			SelectProcess( ( i, j ) => {
-				m_TrackInfo[ j ].AlbumRating = 1;
-				m_TrackInfo[ j ].ModifyFlag |= TrackInfo.Modify.AlbumRating;
-				_item[ i ] = new ListViewItem( m_TrackInfo[ j ].GetItemString() );
-				_item[ i ].BackColor = Color.LightPink;
-			} );
-			m_listView1.Refresh();
-			WriteMusicLibraryJson();
-		}
 
-		private void iTunesに反映するToolStripMenuItem_Click_1( object sender, EventArgs e ) {
-			SelectProcess( ( i, j ) => {
-				var t = m_TrackInfo[ j ];
-				if( 0 != ( t.ModifyFlag & TrackInfo.Modify.AlbumRating ) ) {
-					iTunesHelper.Track( j ).AlbumRating = t.AlbumRating;
+		#region コンテキストメニュー
+
+		/// <summary>
+		/// コマンド実行用の共通処理
+		/// </summary>
+		/// <param name="idxs"></param>
+		/// <param name="text"></param>
+		/// <param name="command"></param>
+		/// <param name="complete"></param>
+		/// <param name="parallel"></param>
+		/// <param name="force"></param>
+		async void Execute( int[] idxs, string text, Action<int> command, Action complete, bool parallel = false, bool force = false ) {
+			string aa = "";
+			if( force == false ) {
+				if( 30 < idxs.Length ) {
+					aa = $"{idxs.Length}曲を{text}\n\n{aa}\nよろしいですか？";
 				}
-				m_TrackInfo[ j ].ModifyFlag = 0;
-				_item[ i ] = new ListViewItem( m_TrackInfo[ j ].GetItemString() );
-				_item[ i ].BackColor = Color.White;
+				else {
+					aa = string.Join( "\n", idxs.Select( x => $"> {m_TrackInfo[ x ].Artist} - {m_TrackInfo[ x ].Name}" ).ToArray() );
+					aa = $"以下を{text}\n\n{aa}\nよろしいですか？";
+				}
+				System.Media.SystemSounds.Asterisk.Play();
+
+				var result = MessageBox.Show( this, aa, "確認", MessageBoxButtons.OKCancel, MessageBoxIcon.Question );
+				if( result == DialogResult.Cancel ) return;
+			}
+
+			await Task.Run( () => {
+				var sw = new System.Diagnostics.Stopwatch();
+				sw.Start();
+
+				float f = 100.0f / (float) ( idxs.Length );
+				float ff = 0.0f;
+				Invoke( new Action( () => {
+					ShowStatusbarControl( true, text );
+					toolStripProgressBar1.Value = (int) 0;
+				} ) );
+
+				Action bar = () => {
+					ff += f;
+					if( 100.0f < ff ) ff = 100.0f;
+					toolStripProgressBar1.Value = (int) ff;
+				};
+				if( parallel ) {
+					Parallel.For( 0, idxs.Length, Helper.m_parallelOptions, i => {
+						command?.Invoke( idxs[ i ] );
+						Invoke( bar );
+					} );
+				}
+				else {
+					for( int i = idxs.Length - 1; 0 <= i; i-- ) {
+						command?.Invoke( idxs[ i ] );
+						Invoke( bar );
+					}
+				}
+				Invoke( new Action( () => {
+					ShowStatusbarControl( false );
+				} ) );
+				sw.Stop();
+				Log.Info( $"{text}: {sw.Elapsed.ToString()}" );
+				complete?.Invoke();
 			} );
-			未評価を検出するToolStripMenuItem_Click();
 		}
 
-		private void ログToolStripMenuItem_Click( object sender, EventArgs e ) {
-			LogWindow.Visible = true;
+
+		private void 曲の情報をiTunesから読み込むToolStripMenuItem_Click( object sender, EventArgs e ) {
+			var idxs = MakeSelectIndexArray();
+			Execute( idxs, "曲の情報をiTunesから読み込む",
+				( i ) => {
+					try {
+						var t = iTunesHelper.Tracks[ i ] as IITFileOrCDTrack;
+						m_TrackInfo[ i ] = new TrackInfo( i, t );
+						Marshal.ReleaseComObject( t );
+					}
+					catch( Exception ce ) {
+						Log.Exception( ce );
+					}
+				},
+				() => {
+					WriteMusicLibraryJson();
+					ApplyTrackInfoToListView();
+				}, true, true
+			);
 		}
+
+
+		void アルバムレーティングを1に設定するToolStripMenuItem_Click( object sender, EventArgs e ) {
+
+			var idxs = MakeSelectIndexArray();
+			Execute( idxs, "アルバムレーティングを1に設定します",
+				( i ) => {
+					try {
+						var t = iTunesHelper.Tracks[ i ] as IITFileOrCDTrack;
+						t.AlbumRating = 1;
+						m_TrackInfo[ i ].AlbumRating = 1;
+						Marshal.ReleaseComObject( t );
+					}
+					catch( Exception ce ) {
+						Log.Exception( ce );
+					}
+				},
+				() => {
+					WriteMusicLibraryJson();
+					ApplyTrackInfoToListView();
+				}, true
+			);
+		}
+
+
+		
 
 
 		/// <summary>
@@ -394,47 +511,84 @@ namespace iTunesUtility {
 		/// <param name="sender"></param>
 		/// <param name="ev"></param>
 		private void iTunesからこの曲を削除する( object sender = null, EventArgs ev = null ) {
-			List<int> lst = new List<int>();
-			SelectProcess( ( i, j ) => {
-				lst.Add( j );
-			} );
-			string aa = "";
-			if( 30 < lst.Count ) {
-				aa = $"{lst.Count}曲をiTunesから削除します\n\n{aa}\nよろしいですか？";
-			}
-			else {
-				aa = string.Join( "\n", lst.Select( x => $"> {m_TrackInfo[ x ].Artist} - {m_TrackInfo[ x ].Name}" ).ToArray() );
-				aa = $"以下をiTunesから削除します\n\n{aa}\nよろしいですか？";
-			}
-			var result = MessageBox.Show( aa, "確認", MessageBoxButtons.OKCancel, MessageBoxIcon.Question );
-			if( result == DialogResult.OK ) {
-				try {
-					var dels = lst.Select( x => iTunesHelper.Track( x ) ).ToArray();
-					//foreach( var d in dels ) {
-					for( int i = dels.Length - 1; 0 <= i; i-- ) {
-						var d = dels[ i ];
-						Log.Info( $"{d.Name}: Delete" );
-						d.Delete();
-						
-					}
+			var idxs = MakeSelectIndexArray();
+			int[] idxs2 = new int[0];
+			Execute( idxs, "iTunesから曲を削除します",
+				( i ) => {
+					for(; ; ) {
+						try {
+							var d = iTunesHelper.Tracks[ i ];
+							Log.Info( $"{d.Name}: Delete" );
+							d.Delete();
+							Marshal.ReleaseComObject( d );
 
-					for( int i = lst.Count - 1; 0 <= i; i-- ) {
-						ArrayUtility.RemoveAt( ref m_TrackInfo, lst[ i ] );
+							ArrayUtility.RemoveAt( ref m_TrackInfo, i );
+							//ArrayUtility.Add(ref idxs2 , i);
+						}
+						catch( System.Runtime.InteropServices.COMException ce ) {
+							Log.Exception(ce);
+							// 削除を繰り返すとiTunes側でコンパクション処理が走るのか
+							// Tracksへの参照がダメになる
+							// なのでDettach > AttachでTracksを取得し直す
+							iTunesHelper.Dettach();
+							iTunesHelper.Attach();
+							continue;
+						}
+						catch( Exception e ) {
+							Log.Exception( e );
+						}
+						break;
 					}
+				},
+				() => {
 					// 削除要素に合わせてインデックスを再設定
 					for( int i = 0; i < m_TrackInfo.Length; i++ ) {
 						m_TrackInfo[ i ].Index = i;
 					}
+					WriteMusicLibraryJson();
 					ApplyTrackInfoToListView();
-
-					//デッドリンクを検出する();
 				}
-				catch( Exception e ) {
-					Log.Exception( e );
-				}
-			}
-			//Debug.Log( aa );
+			);
 		}
+
+		private void ファイルを選択してアートワークを設定するToolStripMenuItem_Click( object sender, EventArgs e ) {
+			var idxs = MakeSelectIndexArray();
+			if( idxs.Length == 0 ) return;
+
+			var ofd = new OpenFileDialog();
+			ofd.InitialDirectory = m_TrackInfo[ idxs[ 0 ] ].Location.GetDirectory();
+			ofd.FilterIndex = 1;
+			ofd.Title = "アートワークに設定するファイルを選択してください";
+			ofd.Filter = "Image Files (*.bmp, *.jpg, *.png)|*.bmp;*.jpg;*.png";
+			ofd.RestoreDirectory = false;
+			ofd.CheckFileExists = true;
+			ofd.CheckPathExists = true;
+			if( ofd.ShowDialog() == DialogResult.Cancel ) return;
+
+			Execute( idxs, "曲の情報をiTunesから読み込む",
+				( i ) => {
+					try {
+						var t = iTunesHelper.Tracks[ i ] as IITFileOrCDTrack;
+						t.AddArtworkFromFile( ofd.FileName );
+						Marshal.ReleaseComObject( t );
+						m_TrackInfo[ i ].ArtworkNum++;
+					}
+					catch( Exception ce ) {
+						Log.Exception( ce );
+					}
+				},
+				() => {
+					WriteMusicLibraryJson();
+					ApplyTrackInfoToListView();
+				}, true, true
+			);
+		}
+
+
+
+		#endregion
+
+
 
 
 		//private void EmbedArtworkButton_Click_1( object sender, EventArgs e ) {

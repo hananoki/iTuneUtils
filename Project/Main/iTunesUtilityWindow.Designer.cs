@@ -50,9 +50,8 @@
 			this.columnArtwork = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
 			this.columnLocation = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
 			this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
-			this.表示ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.色替えToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.ライブラリから削除ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.曲の情報をiTunesから読み込むToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.iTunesからこの曲を削除するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.アルバムレーティングを1に設定するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.statusStrip1 = new System.Windows.Forms.StatusStrip();
 			this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
@@ -64,8 +63,9 @@
 			this.全て表示するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.デッドリンクを検出するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.未設定のアートワークを検出するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.未評価を検出するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.不要なアルバムレーティングを検出するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.ログToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.ファイルを選択してアルバムアートを設定するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
 			this.splitContainer1.Panel2.SuspendLayout();
 			this.splitContainer1.SuspendLayout();
@@ -198,38 +198,31 @@
 			// contextMenuStrip1
 			// 
 			this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.表示ToolStripMenuItem,
-            this.色替えToolStripMenuItem,
-            this.ライブラリから削除ToolStripMenuItem,
-            this.アルバムレーティングを1に設定するToolStripMenuItem});
+            this.曲の情報をiTunesから読み込むToolStripMenuItem,
+            this.iTunesからこの曲を削除するToolStripMenuItem,
+            this.アルバムレーティングを1に設定するToolStripMenuItem,
+            this.ファイルを選択してアルバムアートを設定するToolStripMenuItem});
 			this.contextMenuStrip1.Name = "contextMenuStrip1";
-			this.contextMenuStrip1.Size = new System.Drawing.Size(256, 114);
+			this.contextMenuStrip1.Size = new System.Drawing.Size(274, 114);
 			// 
-			// 表示ToolStripMenuItem
+			// 曲の情報をiTunesから読み込むToolStripMenuItem
 			// 
-			this.表示ToolStripMenuItem.Name = "表示ToolStripMenuItem";
-			this.表示ToolStripMenuItem.Size = new System.Drawing.Size(255, 22);
-			this.表示ToolStripMenuItem.Text = "曲の情報をiTunesから読み込む";
-			this.表示ToolStripMenuItem.Click += new System.EventHandler(this.表示ToolStripMenuItem_Click);
+			this.曲の情報をiTunesから読み込むToolStripMenuItem.Name = "曲の情報をiTunesから読み込むToolStripMenuItem";
+			this.曲の情報をiTunesから読み込むToolStripMenuItem.Size = new System.Drawing.Size(230, 22);
+			this.曲の情報をiTunesから読み込むToolStripMenuItem.Text = "曲の情報をiTunesから読み込む";
+			this.曲の情報をiTunesから読み込むToolStripMenuItem.Click += new System.EventHandler(this.曲の情報をiTunesから読み込むToolStripMenuItem_Click);
 			// 
-			// 色替えToolStripMenuItem
+			// iTunesからこの曲を削除するToolStripMenuItem
 			// 
-			this.色替えToolStripMenuItem.Name = "色替えToolStripMenuItem";
-			this.色替えToolStripMenuItem.Size = new System.Drawing.Size(255, 22);
-			this.色替えToolStripMenuItem.Text = "編集した曲の情報をiTunesに反映する";
-			this.色替えToolStripMenuItem.Click += new System.EventHandler(this.iTunesに反映するToolStripMenuItem_Click_1);
-			// 
-			// ライブラリから削除ToolStripMenuItem
-			// 
-			this.ライブラリから削除ToolStripMenuItem.Name = "ライブラリから削除ToolStripMenuItem";
-			this.ライブラリから削除ToolStripMenuItem.Size = new System.Drawing.Size(255, 22);
-			this.ライブラリから削除ToolStripMenuItem.Text = "iTunesからこの曲を削除する";
-			this.ライブラリから削除ToolStripMenuItem.Click += new System.EventHandler(this.iTunesからこの曲を削除する);
+			this.iTunesからこの曲を削除するToolStripMenuItem.Name = "iTunesからこの曲を削除するToolStripMenuItem";
+			this.iTunesからこの曲を削除するToolStripMenuItem.Size = new System.Drawing.Size(230, 22);
+			this.iTunesからこの曲を削除するToolStripMenuItem.Text = "iTunesからこの曲を削除する";
+			this.iTunesからこの曲を削除するToolStripMenuItem.Click += new System.EventHandler(this.iTunesからこの曲を削除する);
 			// 
 			// アルバムレーティングを1に設定するToolStripMenuItem
 			// 
 			this.アルバムレーティングを1に設定するToolStripMenuItem.Name = "アルバムレーティングを1に設定するToolStripMenuItem";
-			this.アルバムレーティングを1に設定するToolStripMenuItem.Size = new System.Drawing.Size(255, 22);
+			this.アルバムレーティングを1に設定するToolStripMenuItem.Size = new System.Drawing.Size(230, 22);
 			this.アルバムレーティングを1に設定するToolStripMenuItem.Text = "アルバムレーティングを1に設定する";
 			this.アルバムレーティングを1に設定するToolStripMenuItem.Click += new System.EventHandler(this.アルバムレーティングを1に設定するToolStripMenuItem_Click);
 			// 
@@ -291,18 +284,20 @@
             this.全て表示するToolStripMenuItem,
             this.デッドリンクを検出するToolStripMenuItem,
             this.未設定のアートワークを検出するToolStripMenuItem,
-            this.未評価を検出するToolStripMenuItem});
+            this.不要なアルバムレーティングを検出するToolStripMenuItem});
 			this.ツールToolStripMenuItem.Image = ((System.Drawing.Image)(resources.GetObject("ツールToolStripMenuItem.Image")));
 			this.ツールToolStripMenuItem.Name = "ツールToolStripMenuItem";
-			this.ツールToolStripMenuItem.Size = new System.Drawing.Size(62, 20);
-			this.ツールToolStripMenuItem.Text = "ツール";
+			this.ツールToolStripMenuItem.Size = new System.Drawing.Size(77, 20);
+			this.ツールToolStripMenuItem.Text = "フィルター";
 			// 
 			// 全て表示するToolStripMenuItem
 			// 
+			this.全て表示するToolStripMenuItem.Checked = true;
+			this.全て表示するToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
 			this.全て表示するToolStripMenuItem.Name = "全て表示するToolStripMenuItem";
 			this.全て表示するToolStripMenuItem.Size = new System.Drawing.Size(249, 22);
 			this.全て表示するToolStripMenuItem.Text = "全て表示する";
-			this.全て表示するToolStripMenuItem.Click += new System.EventHandler(this.全て表示するToolStripMenuItem_Click);
+			this.全て表示するToolStripMenuItem.Click += new System.EventHandler(this.全て表示する);
 			// 
 			// デッドリンクを検出するToolStripMenuItem
 			// 
@@ -316,14 +311,14 @@
 			this.未設定のアートワークを検出するToolStripMenuItem.Name = "未設定のアートワークを検出するToolStripMenuItem";
 			this.未設定のアートワークを検出するToolStripMenuItem.Size = new System.Drawing.Size(249, 22);
 			this.未設定のアートワークを検出するToolStripMenuItem.Text = "未設定のアートワークを検出する";
-			this.未設定のアートワークを検出するToolStripMenuItem.Click += new System.EventHandler(this.未設定のアートワークを検出するToolStripMenuItem_Click);
+			this.未設定のアートワークを検出するToolStripMenuItem.Click += new System.EventHandler(this.未設定のアートワークを検出する);
 			// 
-			// 未評価を検出するToolStripMenuItem
+			// 不要なアルバムレーティングを検出するToolStripMenuItem
 			// 
-			this.未評価を検出するToolStripMenuItem.Name = "未評価を検出するToolStripMenuItem";
-			this.未評価を検出するToolStripMenuItem.Size = new System.Drawing.Size(249, 22);
-			this.未評価を検出するToolStripMenuItem.Text = "不要なアルバムレーティングを検出する";
-			this.未評価を検出するToolStripMenuItem.Click += new System.EventHandler(this.未評価を検出するToolStripMenuItem_Click);
+			this.不要なアルバムレーティングを検出するToolStripMenuItem.Name = "不要なアルバムレーティングを検出するToolStripMenuItem";
+			this.不要なアルバムレーティングを検出するToolStripMenuItem.Size = new System.Drawing.Size(249, 22);
+			this.不要なアルバムレーティングを検出するToolStripMenuItem.Text = "不要なアルバムレーティングを検出する";
+			this.不要なアルバムレーティングを検出するToolStripMenuItem.Click += new System.EventHandler(this.不要なアルバムレーティングを検出する);
 			// 
 			// ログToolStripMenuItem
 			// 
@@ -332,6 +327,13 @@
 			this.ログToolStripMenuItem.Size = new System.Drawing.Size(53, 20);
 			this.ログToolStripMenuItem.Text = "ログ";
 			this.ログToolStripMenuItem.Click += new System.EventHandler(this.ログToolStripMenuItem_Click);
+			// 
+			// ファイルを選択してアルバムアートを設定するToolStripMenuItem
+			// 
+			this.ファイルを選択してアルバムアートを設定するToolStripMenuItem.Name = "ファイルを選択してアルバムアートを設定するToolStripMenuItem";
+			this.ファイルを選択してアルバムアートを設定するToolStripMenuItem.Size = new System.Drawing.Size(273, 22);
+			this.ファイルを選択してアルバムアートを設定するToolStripMenuItem.Text = "ファイルを選択してアルバムアートを設定する";
+			this.ファイルを選択してアルバムアートを設定するToolStripMenuItem.Click += new System.EventHandler(this.ファイルを選択してアートワークを設定するToolStripMenuItem_Click);
 			// 
 			// iTunesUtilityWindow
 			// 
@@ -344,6 +346,7 @@
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.MainMenuStrip = this.menuStrip1;
 			this.Name = "iTunesUtilityWindow";
+			this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
 			this.Text = "iTunesUtils";
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
 			this.Load += new System.EventHandler(this.Form1_Load);
@@ -381,22 +384,22 @@
 		private System.Windows.Forms.ColumnHeader columnHeader11;
 		private System.Windows.Forms.ColumnHeader columnRating;
 		private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
-		private System.Windows.Forms.ToolStripMenuItem 表示ToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem 曲の情報をiTunesから読み込むToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem ToolStripMenuItem1;
-		private System.Windows.Forms.ToolStripMenuItem 色替えToolStripMenuItem;
 		private System.Windows.Forms.ColumnHeader columnArtwork;
 		private System.Windows.Forms.ColumnHeader columnLocation;
 		private System.Windows.Forms.ColumnHeader columnIndex;
 		private System.Windows.Forms.ToolStripMenuItem ツールToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem デッドリンクを検出するToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem 未設定のアートワークを検出するToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem 未評価を検出するToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem 不要なアルバムレーティングを検出するToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem 全て表示するToolStripMenuItem;
 		private System.Windows.Forms.ColumnHeader columnAlbumRating;
 		private System.Windows.Forms.ColumnHeader columnGenre;
 		private System.Windows.Forms.ToolStripMenuItem アルバムレーティングを1に設定するToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem ライブラリから削除ToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem iTunesからこの曲を削除するToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem ログToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem ファイルを選択してアルバムアートを設定するToolStripMenuItem;
 	}
 }
 

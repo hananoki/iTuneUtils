@@ -22,6 +22,13 @@ namespace iTunesUtility {
 
 		public static Action ActiveEvent;
 
+		public static IITTrackCollection Tracks {
+			get {
+				Attach();
+				return tracks;
+			}
+		}
+
 		public static bool IsAlive() {
 			return iTunes != null ? true : false;
 		}
@@ -32,6 +39,7 @@ namespace iTunesUtility {
 		}
 
 		public static IITFileOrCDTrack Track( int i ) {
+			Attach();
 			//var mainLibrary = iTunesHelper.GetApp().LibraryPlaylist;
 			var tracks = mainLibrary.Tracks;
 			//Marshal.ReleaseComObject( mainLibrary );
