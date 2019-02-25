@@ -60,11 +60,11 @@
     <Compile Include="CsLib\JsonUtils.cs" />
     <Compile Include="CsLib\StringExtensions.cs" />
     <Compile Include="CsLib\Win32.cs" />
-    <Compile Include="Log\Log.cs" />
-    <Compile Include="Log\LogWindow.cs">
+    <Compile Include="CsLib\Log.cs" />
+    <Compile Include="CsLib\LogWindow.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Log\LogWindow.Designer.cs">
+    <Compile Include="CsLib\LogWindow.Designer.cs">
       <DependentUpon>LogWindow.cs</DependentUpon>
     </Compile>
     <Compile Include="Main\Config.cs" />
@@ -79,7 +79,7 @@
     <Compile Include="Main\Program.cs" />
     <Compile Include="Main\TrackInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="Log\LogWindow.resx">
+    <EmbeddedResource Include="CsLib\LogWindow.resx">
       <DependentUpon>LogWindow.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Main\iTunesUtilityWindow.resx">
