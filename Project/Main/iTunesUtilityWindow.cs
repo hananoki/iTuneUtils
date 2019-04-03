@@ -44,7 +44,7 @@ namespace iTunesUtility {
 			iTunesHelper.ActiveEvent += iTunesActiveEvent;
 			m_config = new Config();
 
-			
+
 		}
 
 
@@ -57,7 +57,7 @@ namespace iTunesUtility {
 		/// iTuneから情報を取得します
 		/// </summary>
 		void ImportMusicLibrary() {
-			iTunesHelper.Attach();	
+			iTunesHelper.Attach();
 
 			ShowStatusbarControl( true, "インポート中" );
 
@@ -89,25 +89,44 @@ namespace iTunesUtility {
 			float f = 100.0f / (float) ( numTracks );
 			float ff = 0.0f;
 			//*
-			Parallel.For( 0, numTracks, Helper.m_parallelOptions, cnt => {
-			try {
-					if( cnt == 0 ) return;
-					int cc = cnt;
-					var t = iTunesHelper.Tracks[ cc ];
-					m_TrackInfo[ cc ] = new TrackInfo( cnt, t );
-					this.Invoke( new Action( () => {
-						//i++;
-						ff += f;
-						if( 100.0f < ff ) {
-							ff = 100.0f;
-						}
-						toolStripProgressBar1.Value = (int) ff;
-					} ) );
-					Marshal.ReleaseComObject( t );
-				}
-				catch( Exception ) {
-				}
-			} );
+			Debug.Log( numTracks );
+			int i = 0;
+			foreach( IITTrack t in iTunesHelper.Tracks ) {
+
+				Debug.Log( t.Name );
+				m_TrackInfo[ i ] = new TrackInfo( i, t );
+				this.Invoke( new Action( () => {
+					//i++;
+					ff += f;
+					if( 100.0f < ff ) {
+						ff = 100.0f;
+					}
+					toolStripProgressBar1.Value = (int) ff;
+				} ) );
+
+				Marshal.ReleaseComObject( t );
+				i++;
+			}
+			//Parallel.For( 0, numTracks, Helper.m_parallelOptions, cnt => {
+			//try {
+			//		//if( cnt == 0 ) return;
+			//		int cc = cnt;
+			//		var t = iTunesHelper.Tracks[ cc ];
+			//		m_TrackInfo[ cc ] = new TrackInfo( cnt, t );
+			//		Debug.Log( cnt );
+			//		this.Invoke( new Action( () => {
+			//			//i++;
+			//			ff += f;
+			//			if( 100.0f < ff ) {
+			//				ff = 100.0f;
+			//			}
+			//			toolStripProgressBar1.Value = (int) ff;
+			//		} ) );
+			//		Marshal.ReleaseComObject( t );
+			//	}
+			//	catch( Exception ) {
+			//	}
+			//} );
 			/**/
 
 			sw.Stop();
@@ -135,7 +154,7 @@ namespace iTunesUtility {
 				}
 				else {
 					_item = m_TrackInfo.Select( x => new ListViewItem( x.GetItemString() ) ).ToArray();
-					ArrayUtility.RemoveAt(ref _item , 0);
+					//ArrayUtility.RemoveAt(ref _item , 0);
 					m_listView1.VirtualListSize = _item.Length;
 				}
 
@@ -168,7 +187,7 @@ namespace iTunesUtility {
 			Invoke( new Action( () => {
 				toolStripStatusLabel1.Visible = b;
 				toolStripProgressBar1.Visible = b;
-				if( !string.IsNullOrEmpty(text) ) toolStripStatusLabel1.Text = text;
+				if( !string.IsNullOrEmpty( text ) ) toolStripStatusLabel1.Text = text;
 			} ) );
 		}
 
@@ -185,11 +204,11 @@ namespace iTunesUtility {
 			m_listView1.SetDoubleBuffered( true );
 			listViewItemCollection = new ListView.ListViewItemCollection( m_listView1 );
 			listViewItemSelection = new ListView.SelectedIndexCollection( m_listView1 );
-			m_listView1.RetrieveVirtualItem += new RetrieveVirtualItemEventHandler( ( s ,e ) => {
+			m_listView1.RetrieveVirtualItem += new RetrieveVirtualItemEventHandler( ( s, e ) => {
 				if( _item == null ) return;
 				e.Item = _item[ e.ItemIndex ];
 			} );
-			
+
 			ShowStatusbarControl( false );
 			m_CtrlColor = ToolStripMenuItem1.BackColor;
 
@@ -209,6 +228,8 @@ namespace iTunesUtility {
 			iTunesActiveEvent();
 
 			SetCheckedFillter( 0 );
+
+			Debug.Log( "Starts" );
 		}
 
 
@@ -220,12 +241,12 @@ namespace iTunesUtility {
 		private void Form1_FormClosing( object sender, FormClosingEventArgs e ) {
 			iTunesHelper.Dettach();
 
-			m_config.BackupWindow(this );
+			m_config.BackupWindow( this );
 			Helper.WriteJson( m_config, Helper.m_configPath );
 		}
 
 
-		private async void ToolStripMenuItem_Click( object sender, EventArgs e ) {
+		async void ToolStripMenuItem_Click( object sender, EventArgs e ) {
 			ToolStripMenuItem.Enabled = false;
 
 			await Task.Run( () => ImportMusicLibrary() );
@@ -268,7 +289,7 @@ namespace iTunesUtility {
 
 
 		void iTunesActiveEvent() {
-			Invoke( new Action(()=> {
+			Invoke( new Action( () => {
 				if( iTunesHelper.IsAlive() ) {
 					ToolStripMenuItem1.Text = "iTunes 接続中";
 					ToolStripMenuItem.Enabled = true;
@@ -290,7 +311,7 @@ namespace iTunesUtility {
 				iTunesHelper.Attach();
 			}
 		}
-		
+
 
 		/// <summary>
 		/// カラムクリック
@@ -299,8 +320,8 @@ namespace iTunesUtility {
 		/// <param name="e"></param>
 		private void m_listView1_ColumnClick( object sender, ColumnClickEventArgs e ) {
 			int clm = (int) e.Column;
-			
-			Array.Sort( _item , (x,y)=> {
+
+			Array.Sort( _item, ( x, y ) => {
 				if( 13 == clm ) {
 					if( x.SubItems[ clm ].Text.toInt32() == y.SubItems[ clm ].Text.toInt32() ) return 0;
 					if( x.SubItems[ clm ].Text.toInt32() < y.SubItems[ clm ].Text.toInt32() ) return 1;
@@ -323,7 +344,7 @@ namespace iTunesUtility {
 			if( idxs.Length == 0 ) return;
 			//var t = iTunesHelper.Track( _item[ selectIndex ].ID() );
 			//var tracks = iTunesHelper.mainLibrary.Tracks;
-			var t = iTunesHelper.tracks[ idxs[0] ];
+			var t = iTunesHelper.tracks[ idxs[ 0 ] + 1 ];
 			t.Play();
 			Marshal.ReleaseComObject( t );
 			t = null;
@@ -502,7 +523,7 @@ namespace iTunesUtility {
 		}
 
 
-		
+
 
 
 		/// <summary>
@@ -512,7 +533,7 @@ namespace iTunesUtility {
 		/// <param name="ev"></param>
 		private void iTunesからこの曲を削除する( object sender = null, EventArgs ev = null ) {
 			var idxs = MakeSelectIndexArray();
-			int[] idxs2 = new int[0];
+			int[] idxs2 = new int[ 0 ];
 			Execute( idxs, "iTunesから曲を削除します",
 				( i ) => {
 					for(; ; ) {
@@ -526,7 +547,7 @@ namespace iTunesUtility {
 							//ArrayUtility.Add(ref idxs2 , i);
 						}
 						catch( System.Runtime.InteropServices.COMException ce ) {
-							Log.Exception(ce);
+							Log.Exception( ce );
 							// 削除を繰り返すとiTunes側でコンパクション処理が走るのか
 							// Tracksへの参照がダメになる
 							// なのでDettach > AttachでTracksを取得し直す
@@ -584,17 +605,209 @@ namespace iTunesUtility {
 			);
 		}
 
+		private void cSVに書き出しToolStripMenuItem_Click( object sender, EventArgs e ) {
+			//Debug.Log(123);
+
+			//SaveFileDialogクラスのインスタンスを作成
+			SaveFileDialog sfd = new SaveFileDialog();
+
+			//はじめのファイル名を指定する
+			//はじめに「ファイル名」で表示される文字列を指定する
+			sfd.FileName = "新しいファイル.csv";
+			//はじめに表示されるフォルダを指定する
+			sfd.InitialDirectory = @"C:\";
+			//[ファイルの種類]に表示される選択肢を指定する
+			//指定しない（空の文字列）の時は、現在のディレクトリが表示される
+			sfd.Filter = "CSVファイル(*.csv)|*.csv|すべてのファイル(*.*)|*.*";
+			//[ファイルの種類]ではじめに選択されるものを指定する
+			//2番目の「すべてのファイル」が選択されているようにする
+			sfd.FilterIndex = 2;
+			//タイトルを設定する
+			sfd.Title = "保存先のファイルを選択してください";
+			//ダイアログボックスを閉じる前に現在のディレクトリを復元するようにする
+			sfd.RestoreDirectory = true;
+			//既に存在するファイル名を指定したとき警告する
+			//デフォルトでTrueなので指定する必要はない
+			sfd.OverwritePrompt = true;
+			//存在しないパスが指定されたとき警告を表示する
+			//デフォルトでTrueなので指定する必要はない
+			sfd.CheckPathExists = true;
+
+			//ダイアログを表示する
+			if( sfd.ShowDialog() == DialogResult.OK ) {
+				//OKボタンがクリックされたとき、選択されたファイル名を表示する
+				Console.WriteLine( sfd.FileName );
+
+				using( var st = new System.IO.StreamWriter( sfd.FileName ) ) {
+					//foreach(  ) {
+					st.WriteLine( $"Artist\tAlbum\tName\tDiskCount\tDiskNumber\tTrackCount\tTrackNumber\tYear\tRating\tAlbumRating\tAlbumRatingKind\tratingKind\tSampleRate\tSize\tComment\tDuration\tPlayedCount\tDateAdded\t" );
+					for( int i = 1; i < m_TrackInfo.Length; i++ ) {
+						var p = m_TrackInfo[ i ];
+						st.WriteLine( $"{p.Artist}\t{p.Album}\t{p.Name}\t{p.DiskCount}\t{p.DiskNumber}\t{p.TrackCount}\t{p.TrackNumber}\t{p.Year}\t{p.Rating}\t{p.AlbumRating}\t{p.AlbumRatingKind}\t{p.ratingKind}\t{p.SampleRate}\t{p.Size}\t{p.Comment}\t{p.Duration}\t{p.PlayedCount}\t{p.DateAdded}\t" );
+					}
+				}
+			}
+		}
+
+
+		void AAA() {
+			iTunesHelper.Attach();
+			ShowStatusbarControl( true, "インポート中" );
+			var tnow = DateTime.Now;
+
+			var sw = new System.Diagnostics.Stopwatch();
+			sw.Start();
+
+			float f = 100.0f / (float) ( m_TrackInfo.Length );
+			float ff = 0.0f;
+			for( int i = 0; i < m_TrackInfo.Length;  ) {
+				var cur = m_TrackInfo[ i ];
+				try {
+
+					Win32.SetNowDateTime( cur.DateAdded );
+					if( !File.Exists( cur.Location ) ) {
+						Log.Error( $"Index: {i}: {cur.Name}: {cur.Album}: {cur.Artist}: {cur.Location}: ファイルが存在しない" );
+						i++;
+						continue;
+					}
+
+					var op = iTunesHelper.mainLibrary.AddFile( cur.Location );
+					while( op.InProgress ) {
+						Thread.Sleep( 100 );
+						//Debug.Log( "op.InProgress" );
+					}
+					var tracks = op.Tracks;
+					//var tt = op.Tracks[0] as IITFileOrCDTrack;
+					foreach( IITFileOrCDTrack tt in tracks ) {
+
+						tt.Rating = cur.Rating;
+						tt.AlbumRating = cur.AlbumRating;
+						//tt.AlbumRatingKind = cur.AlbumRatingKind;
+						tt.Rating = cur.Rating;
+						tt.PlayedCount = cur.PlayedCount;
+
+						tt.Comment = cur.Comment;
+						tt.Grouping = cur.Grouping;
+
+						Marshal.ReleaseComObject( tt );
+					}
+
+					Marshal.ReleaseComObject( tracks );
+					this.Invoke( new Action( () => {
+						//i++;
+						ff += f;
+						if( 100.0f < ff ) {
+							ff = 100.0f;
+						}
+						toolStripProgressBar1.Value = (int) ff;
+					} ) );
+				}
+				catch( System.NullReferenceException ne ) {
+				}
+				catch( Exception e ) {
+					Log.Error( $"Index: {i}: {cur.Name}: {cur.Album}: {cur.Artist}: {cur.Location}" );
+					Log.Exception( e );
+					Thread.Sleep( 1000 );
+					continue;
+				}
+				i++;
+			}
+			Win32.SetNowDateTime( tnow );
+			ShowStatusbarControl( false );
+
+			sw.Stop();
+			TimeSpan ts = sw.Elapsed;
+			Debug.Log( ts.ToString() );
+		}
+
+		async void リストの曲をインポートToolStripMenuItem_Click( object sender, EventArgs e ) {
+			//
+			
+			await Task.Run( () => AAA() );
+		}
+
+		void BBB( int[] idxs ) {
+			iTunesHelper.Attach();
+			ShowStatusbarControl( true, "インポート中" );
+			var tnow = DateTime.Now;
+
+			var sw = new System.Diagnostics.Stopwatch();
+			sw.Start();
+
+			float f = 100.0f / (float) ( m_TrackInfo.Length );
+			float ff = 0.0f;
+			for( int i = 0; i < idxs.Length; i++ ) {
+				var cur = m_TrackInfo[ idxs[ i ] ];
+				try {
+
+					Win32.SetNowDateTime( cur.DateAdded );
+					if( !File.Exists( cur.Location ) ) {
+						Log.Error( $"Index: {i}: {cur.Name}: {cur.Album}: {cur.Artist}: {cur.Location}: ファイルが存在しない" );
+						
+						continue;
+					}
+
+					var op = iTunesHelper.mainLibrary.AddFile( cur.Location );
+					while( op.InProgress ) {
+						Thread.Sleep( 100 );
+						//Debug.Log( "op.InProgress" );
+					}
+					var tracks = op.Tracks;
+					//var tt = op.Tracks[0] as IITFileOrCDTrack;
+					foreach( IITFileOrCDTrack tt in tracks ) {
+
+						tt.Rating = cur.Rating;
+						tt.AlbumRating = cur.AlbumRating;
+						//tt.AlbumRatingKind = cur.AlbumRatingKind;
+						tt.Rating = cur.Rating;
+						tt.PlayedCount = cur.PlayedCount;
+
+						tt.Comment = cur.Comment;
+						tt.Grouping = cur.Grouping;
+
+						Marshal.ReleaseComObject( tt );
+					}
+
+					Marshal.ReleaseComObject( tracks );
+					this.Invoke( new Action( () => {
+						//i++;
+						ff += f;
+						if( 100.0f < ff ) {
+							ff = 100.0f;
+						}
+						toolStripProgressBar1.Value = (int) ff;
+					} ) );
+				}
+				catch( System.NullReferenceException ne ) {
+					Log.Error( $"Index: {i}: {cur.Name}: {cur.Album}: {cur.Artist}: {cur.Location}" );
+					Log.Exception( ne );
+					Thread.Sleep( 1000 );
+				}
+				catch( Exception e ) {
+					Log.Error( $"Index: {i}: {cur.Name}: {cur.Album}: {cur.Artist}: {cur.Location}" );
+					Log.Exception( e );
+					Thread.Sleep( 1000 );
+					continue;
+				}
+			}
+			Win32.SetNowDateTime( tnow );
+			ShowStatusbarControl( false );
+
+			sw.Stop();
+			TimeSpan ts = sw.Elapsed;
+			Debug.Log( ts.ToString() );
+		}
+
+		async void 曲を追加するToolStripMenuItem_Click( object sender, EventArgs e ) {
+			var idxs = MakeSelectIndexArray();
+			if( idxs.Length == 0 ) return;
+
+			await Task.Run( () => BBB( idxs ) );
+		}
+	}
+
 
 
 		#endregion
-
-
-
-
-		//private void EmbedArtworkButton_Click_1( object sender, EventArgs e ) {
-		//	if( _tokenSource != null ) {
-		//		_tokenSource.Cancel( true );
-		//	}
-		//}
-	}
+	
 }
