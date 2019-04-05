@@ -7,6 +7,7 @@ namespace iTunesUtility {
 		int height;
 		public int x;
 		public int y;
+		public string playlistFolder;
 
 		public int Width {
 			get {

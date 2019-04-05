@@ -28,6 +28,7 @@ namespace iTunesUtility {
 
 		int m_filterMode;
 
+		Progressbar m_progressbar;
 
 		public static string m_iTunesLibraryPath {
 			get {
@@ -227,6 +228,11 @@ namespace iTunesUtility {
 
 			SetCheckedFillter( 0 );
 
+			if( string.IsNullOrEmpty( m_config.playlistFolder ) ) {
+				m_config.playlistFolder = Directory.GetCurrentDirectory();
+			}
+			m_progressbar = new Progressbar( this, toolStripProgressBar1 );
+
 			Debug.Log( "Starts" );
 		}
 
@@ -253,8 +259,13 @@ namespace iTunesUtility {
 			ToolStripMenuItem.Enabled = true;
 		}
 
-		private void splitContainer1_SizeChanged( object sender, EventArgs e ) {
-			splitContainer1.SplitterDistance = 0;
+		void splitContainer1_SizeChanged( object sender, EventArgs e ) {
+			try {
+				splitContainer1.SplitterDistance = 0;
+			}
+			catch( Exception ex ) {
+				Log.Exception( ex );
+			}
 		}
 
 		//int selectIndex {
@@ -727,6 +738,7 @@ namespace iTunesUtility {
 			await Task.Run( () => AAA() );
 		}
 
+		
 
 		void BBB( int[] idxs ) {
 			iTunesHelper.Attach();
@@ -741,7 +753,6 @@ namespace iTunesUtility {
 			for( int i = 0; i < idxs.Length; i++ ) {
 				var cur = m_TrackInfo[ idxs[ i ] ];
 				try {
-
 					Win32.SetNowDateTime( cur.DateAdded );
 					if( !File.Exists( cur.Location ) ) {
 						Log.Error( $"Index: {i}: {cur.Name}: {cur.Album}: {cur.Artist}: {cur.Location}: ファイルが存在しない" );
@@ -871,7 +882,7 @@ namespace iTunesUtility {
 							var aa = upl.Name.Replace( "/", "／" );
 							var path = outPath + "/" + aa;
 							if( !upl.Smart ) {
-								path += ".csv";
+								path = path + ".csv";
 							}
 							Debug.Log( path );
 
@@ -888,7 +899,6 @@ namespace iTunesUtility {
 					}
 				}
 				finally {
-
 					Marshal.ReleaseComObject( p );
 				}
 			}
@@ -899,7 +909,7 @@ namespace iTunesUtility {
 		void WritePlaylist( string filepath, IITTrackCollection tracks, bool smartPlaylist ) {
 			try {
 				using( var st = new StreamWriter( filepath ) ) {
-					if( smartPlaylist ) return;
+					//if( smartPlaylist ) return;
 					st.WriteLine( "場所" );
 
 					foreach( IITFileOrCDTrack p in tracks ) {
@@ -916,9 +926,126 @@ namespace iTunesUtility {
 			}
 		}
 
-		void プレイリストをインポートToolStripMenuItem_Click( object sender, EventArgs e ) {
 
+		async void MenuItem_ImportPlaylist( object sender, EventArgs e ) {
+			var fbd = new FolderBrowserDialog();
+			fbd.SelectedPath = m_config.playlistFolder;
+			fbd.ShowNewFolderButton = false;
+			
+			if( fbd.ShowDialog() == DialogResult.OK ) {
+				m_config.playlistFolder = fbd.SelectedPath;
+				await Task.Run( () => ImportPlaylist() );
+			}
 		}
+
+
+		/// <summary>
+		/// プレイリストをインポートします
+		/// </summary>
+		void ImportPlaylist() {
+
+			ShowStatusbarControl( true, "プレイリストをインポート中" );
+
+			Directory.SetCurrentDirectory( m_config.playlistFolder.GetDirectory() );
+			
+			var files = Directory.EnumerateFiles( m_config.playlistFolder.GetBaseName(), "*", SearchOption.AllDirectories ).ToArray();
+
+			m_progressbar.Begin( files.Length );
+
+			var dics = new Dictionary<string, IITUserPlaylist>();
+			foreach( var f in files ) {
+				var ss = f.Split( '\\' ).ToList();
+				ss.RemoveAt( 0 );
+
+				string key = "";
+				string playlistName = "";
+				bool cancel = false;
+
+				// ルート直下の場合
+				if( ss.Count == 1 ) {
+					(playlistName, cancel) = MakePlaylistName( ss[ 0 ] );
+
+					var playlist = iTunesHelper.GetApp().CreatePlaylist( playlistName ) as IITUserPlaylist;
+					if( !cancel ) {
+						AddPlaylistToiTunes( f, playlist );
+					}
+					Marshal.ReleaseComObject( playlist );
+				}
+				// フォルダに格納されている場合
+				else {
+					(playlistName, cancel) = MakePlaylistName( ss[ ss.Count - 1 ] );
+					// 末尾のファイル名要素を削除、残りをJoinしてKeyとする
+					ss.RemoveAt( ss.Count - 1 );
+					if( 1 <= ss.Count ) {
+						key = string.Join( "_", ss.ToList() );
+					}
+					if( !dics.ContainsKey( key ) ) {
+						var lastName = ss[ ss.Count - 1 ];
+						ss.RemoveAt( ss.Count - 1 );
+						if( ss.Count == 0 ) {
+							dics.Add( key, iTunesHelper.GetApp().CreateFolder( lastName ) as IITUserPlaylist );
+						}
+						else {
+							dics.Add( key, dics[ string.Join( "_", ss.ToList() ) ].CreateFolder( lastName ) as IITUserPlaylist );
+						}
+					}
+					var playlist = dics[ key ].CreatePlaylist( playlistName ) as IITUserPlaylist;
+					if( !cancel ) {
+						AddPlaylistToiTunes( f, playlist );
+					}
+					Marshal.ReleaseComObject( playlist );
+					m_progressbar.Next();
+				}
+			}
+
+			foreach( var p in dics ) {
+				Marshal.ReleaseComObject( p.Value );
+			}
+
+			ShowStatusbarControl( false );
+		}
+
+
+		/// <summary>
+		/// ファイルパスからプレイリスト用の名前とスマートプレイリストのフラグを返す
+		/// </summary>
+		/// <param name="path"></param>
+		/// <returns></returns>
+		( string playlistName, bool smart) MakePlaylistName( string path ) {
+			bool cancel = false;
+			(var bs, var ext) = ParsePath( path );
+			if( string.IsNullOrEmpty( ext ) ) {
+				bs = "#" + bs;
+				cancel = true;
+			}
+			return (bs, cancel);
+		}
+
+
+		/// <summary>
+		/// ファイルパスからベース名と拡張子名を返す
+		/// </summary>
+		/// <param name="path"></param>
+		/// <returns></returns>
+		(string basename, string ext) ParsePath( string path ) {
+			return (path.GetBaseName(), path.getExt() );
+		}
+
+
+		/// <summary>
+		/// 書き出したプレイリストを読み込んでiTunes側に追加する
+		/// </summary>
+		/// <param name="playlistFilepath"></param>
+		/// <param name="playlist"></param>
+		void AddPlaylistToiTunes( string playlistFilepath, IITUserPlaylist playlist ) {
+			var readtext = File.ReadAllText( playlistFilepath ).Split( '\r', '\n' ).Where( x => !string.IsNullOrEmpty( x ) ).ToList();
+			readtext.RemoveAt( 0 );
+			if( readtext.Count == 0 ) return;
+			playlist.AddFiles( readtext.ToArray() );
+
+			Marshal.ReleaseComObject( playlist );
+		}
+
 	}
 	
 	#endregion
