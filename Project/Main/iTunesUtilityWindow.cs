@@ -43,8 +43,6 @@ namespace iTunesUtility {
 			InitializeComponent();
 			iTunesHelper.ActiveEvent += iTunesActiveEvent;
 			m_config = new Config();
-
-
 		}
 
 
@@ -303,6 +301,7 @@ namespace iTunesUtility {
 			} ) );
 		}
 
+
 		private void ToolStripMenuItem1_Click( object sender, EventArgs e ) {
 			if( iTunesHelper.IsAlive() ) {
 				iTunesHelper.Dettach();
@@ -479,7 +478,7 @@ namespace iTunesUtility {
 		}
 
 
-		private void 曲の情報をiTunesから読み込むToolStripMenuItem_Click( object sender, EventArgs e ) {
+		void 曲の情報をiTunesから読み込むToolStripMenuItem_Click( object sender, EventArgs e ) {
 			var idxs = MakeSelectIndexArray();
 			Execute( idxs, "曲の情報をiTunesから読み込む",
 				( i ) => {
@@ -531,7 +530,7 @@ namespace iTunesUtility {
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="ev"></param>
-		private void iTunesからこの曲を削除する( object sender = null, EventArgs ev = null ) {
+		void iTunesからこの曲を削除する( object sender = null, EventArgs ev = null ) {
 			var idxs = MakeSelectIndexArray();
 			int[] idxs2 = new int[ 0 ];
 			Execute( idxs, "iTunesから曲を削除します",
@@ -572,7 +571,7 @@ namespace iTunesUtility {
 			);
 		}
 
-		private void ファイルを選択してアートワークを設定するToolStripMenuItem_Click( object sender, EventArgs e ) {
+		void ファイルを選択してアートワークを設定するToolStripMenuItem_Click( object sender, EventArgs e ) {
 			var idxs = MakeSelectIndexArray();
 			if( idxs.Length == 0 ) return;
 
@@ -605,7 +604,8 @@ namespace iTunesUtility {
 			);
 		}
 
-		private void cSVに書き出しToolStripMenuItem_Click( object sender, EventArgs e ) {
+
+		void cSVに書き出しToolStripMenuItem_Click( object sender, EventArgs e ) {
 			//Debug.Log(123);
 
 			//SaveFileDialogクラスのインスタンスを作成
@@ -660,7 +660,7 @@ namespace iTunesUtility {
 
 			float f = 100.0f / (float) ( m_TrackInfo.Length );
 			float ff = 0.0f;
-			for( int i = 0; i < m_TrackInfo.Length;  ) {
+			for( int i = 0; i < m_TrackInfo.Length; ) {
 				var cur = m_TrackInfo[ i ];
 				try {
 
@@ -720,11 +720,13 @@ namespace iTunesUtility {
 			Debug.Log( ts.ToString() );
 		}
 
+
 		async void リストの曲をインポートToolStripMenuItem_Click( object sender, EventArgs e ) {
 			//
-			
+
 			await Task.Run( () => AAA() );
 		}
+
 
 		void BBB( int[] idxs ) {
 			iTunesHelper.Attach();
@@ -743,7 +745,7 @@ namespace iTunesUtility {
 					Win32.SetNowDateTime( cur.DateAdded );
 					if( !File.Exists( cur.Location ) ) {
 						Log.Error( $"Index: {i}: {cur.Name}: {cur.Album}: {cur.Artist}: {cur.Location}: ファイルが存在しない" );
-						
+
 						continue;
 					}
 
@@ -804,10 +806,121 @@ namespace iTunesUtility {
 
 			await Task.Run( () => BBB( idxs ) );
 		}
+
+
+
+
+		async void Menu_ExportPlaylist( object sender, EventArgs e ) {
+			await Task.Run( () => WritePlaylistAll() );
+		}
+
+
+		void WritePlaylistAll() {
+			var lsp = iTunesHelper.GetApp().LibrarySource.Playlists;
+			string outdate = DateTime.Now.ToString( "yyyyMMddHHmmss" );
+			string outPath = outdate;
+			var dirs = new List<string>();
+			Directory.CreateDirectory( outPath );
+
+			foreach( IITPlaylist p in lsp ) {
+				try {
+					if( p.Kind == ITPlaylistKind.ITPlaylistKindLibrary ) continue;
+
+					IITUserPlaylist upl = (IITUserPlaylist) p;
+					var parent = upl.get_Parent();
+
+					try {
+						if( upl.SpecialKind == ITUserPlaylistSpecialKind.ITUserPlaylistSpecialKindFolder ) {
+							//Directory.Exists
+							Debug.Log( "ITUserPlaylistSpecialKindFolder: " );
+
+							if( parent == null ) {
+								if( 1 <= dirs.Count ) {
+									dirs.RemoveAt( dirs.Count - 1 );
+								}
+								dirs.Add( upl.Name );
+							}
+							else {
+								if( dirs[ dirs.Count - 1 ] != parent.Name ) {
+									dirs.RemoveAt( dirs.Count - 1 );
+								}
+								dirs.Add( upl.Name );
+							}
+
+							outPath = outdate + "/" + string.Join( "/", dirs );
+							Directory.CreateDirectory( outPath );
+							Debug.Log( outPath );
+						}
+						else if( upl.SpecialKind == ITUserPlaylistSpecialKind.ITUserPlaylistSpecialKindNone ) {
+							void updatePath( bool force = false ) {
+								if( force || dirs[ dirs.Count - 1 ] != parent.Name ) {
+									dirs.RemoveAt( dirs.Count - 1 );
+									outPath = outdate + "/" + string.Join( "/", dirs );
+								}
+							}
+							if( parent == null ) {
+								if( 1 <= dirs.Count ) {
+									updatePath( true );
+								}
+							}
+							else {
+								updatePath();
+							}
+
+							Debug.Log( $"{upl.Name}: {upl.SpecialKind.ToString()}: {upl.Smart}" );
+							var aa = upl.Name.Replace( "/", "／" );
+							var path = outPath + "/" + aa;
+							if( !upl.Smart ) {
+								path += ".csv";
+							}
+							Debug.Log( path );
+
+							var tr = p.Tracks;
+							WritePlaylist( path, tr, upl.Smart );
+							Marshal.ReleaseComObject( tr );
+						}
+					}
+					finally {
+						if( parent != null ) {
+							Marshal.ReleaseComObject( parent );
+						}
+						Marshal.ReleaseComObject( upl );
+					}
+				}
+				finally {
+
+					Marshal.ReleaseComObject( p );
+				}
+			}
+			Marshal.ReleaseComObject( lsp );
+		}
+
+
+		void WritePlaylist( string filepath, IITTrackCollection tracks, bool smartPlaylist ) {
+			try {
+				using( var st = new StreamWriter( filepath ) ) {
+					if( smartPlaylist ) return;
+					st.WriteLine( "場所" );
+
+					foreach( IITFileOrCDTrack p in tracks ) {
+						st.WriteLine( $"{p.Location}" );
+						Marshal.ReleaseComObject( p );
+					}
+				}
+			}
+			catch( Exception e ) {
+				Debug.Error( e );
+			}
+			finally {
+				Marshal.ReleaseComObject( tracks );
+			}
+		}
+
+		void プレイリストをインポートToolStripMenuItem_Click( object sender, EventArgs e ) {
+
+		}
 	}
-
-
-
-		#endregion
 	
+	#endregion
+
 }
