@@ -54,25 +54,24 @@
 			this.iTunesからこの曲を削除するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.アルバムレーティングを1に設定するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.ファイルを選択してアルバムアートを設定するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.曲を追加するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.statusStrip1 = new System.Windows.Forms.StatusStrip();
 			this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
 			this.toolStripProgressBar1 = new System.Windows.Forms.ToolStripProgressBar();
 			this.menuStrip1 = new System.Windows.Forms.MenuStrip();
 			this.ToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
-			this.ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.MenuItem_Tools = new System.Windows.Forms.ToolStripMenuItem();
+			this.MenuItem_LibraryImport = new System.Windows.Forms.ToolStripMenuItem();
+			this.MainMenuItem_RegisteriTunesLibrary = new System.Windows.Forms.ToolStripMenuItem();
+			this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+			this.MainMenuItem_ExportPlaylistToolStrip = new System.Windows.Forms.ToolStripMenuItem();
+			this.MainMenuItem_ImportPlaylistToolStrip = new System.Windows.Forms.ToolStripMenuItem();
 			this.ツールToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.全て表示するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.デッドリンクを検出するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.未設定のアートワークを検出するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.不要なアルバムレーティングを検出するToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.ログToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.ツールToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
-			this.cSVに書き出しToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.リストの曲をインポートToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-			this.MenuItem_ExportPlaylistToolStrip = new System.Windows.Forms.ToolStripMenuItem();
-			this.プレイリストをインポートToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.Context_RegisterLibrary = new System.Windows.Forms.ToolStripMenuItem();
 			((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
 			this.splitContainer1.Panel2.SuspendLayout();
 			this.splitContainer1.SuspendLayout();
@@ -209,9 +208,9 @@
             this.iTunesからこの曲を削除するToolStripMenuItem,
             this.アルバムレーティングを1に設定するToolStripMenuItem,
             this.ファイルを選択してアルバムアートを設定するToolStripMenuItem,
-            this.曲を追加するToolStripMenuItem});
+            this.Context_RegisterLibrary});
 			this.contextMenuStrip1.Name = "contextMenuStrip1";
-			this.contextMenuStrip1.Size = new System.Drawing.Size(274, 114);
+			this.contextMenuStrip1.Size = new System.Drawing.Size(274, 136);
 			// 
 			// 曲の情報をiTunesから読み込むToolStripMenuItem
 			// 
@@ -241,13 +240,6 @@
 			this.ファイルを選択してアルバムアートを設定するToolStripMenuItem.Text = "ファイルを選択してアルバムアートを設定する";
 			this.ファイルを選択してアルバムアートを設定するToolStripMenuItem.Click += new System.EventHandler(this.ファイルを選択してアートワークを設定するToolStripMenuItem_Click);
 			// 
-			// 曲を追加するToolStripMenuItem
-			// 
-			this.曲を追加するToolStripMenuItem.Name = "曲を追加するToolStripMenuItem";
-			this.曲を追加するToolStripMenuItem.Size = new System.Drawing.Size(273, 22);
-			this.曲を追加するToolStripMenuItem.Text = "曲を追加する";
-			this.曲を追加するToolStripMenuItem.Click += new System.EventHandler(this.曲を追加するToolStripMenuItem_Click);
-			// 
 			// statusStrip1
 			// 
 			this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -274,10 +266,9 @@
 			// 
 			this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.ToolStripMenuItem1,
-            this.ToolStripMenuItem,
+            this.MenuItem_Tools,
             this.ツールToolStripMenuItem,
-            this.ログToolStripMenuItem,
-            this.ツールToolStripMenuItem1});
+            this.ログToolStripMenuItem});
 			this.menuStrip1.Location = new System.Drawing.Point(0, 0);
 			this.menuStrip1.Name = "menuStrip1";
 			this.menuStrip1.Size = new System.Drawing.Size(780, 24);
@@ -292,14 +283,51 @@
 			this.ToolStripMenuItem1.Text = "iTunesに接続";
 			this.ToolStripMenuItem1.Click += new System.EventHandler(this.ToolStripMenuItem1_Click);
 			// 
-			// ToolStripMenuItem
+			// MenuItem_Tools
 			// 
-			this.ToolStripMenuItem.Enabled = false;
-			this.ToolStripMenuItem.Image = ((System.Drawing.Image)(resources.GetObject("ToolStripMenuItem.Image")));
-			this.ToolStripMenuItem.Name = "ToolStripMenuItem";
-			this.ToolStripMenuItem.Size = new System.Drawing.Size(91, 20);
-			this.ToolStripMenuItem.Text = "再インポート";
-			this.ToolStripMenuItem.Click += new System.EventHandler(this.ToolStripMenuItem_Click);
+			this.MenuItem_Tools.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.MenuItem_LibraryImport,
+            this.MainMenuItem_RegisteriTunesLibrary,
+            this.toolStripSeparator1,
+            this.MainMenuItem_ExportPlaylistToolStrip,
+            this.MainMenuItem_ImportPlaylistToolStrip});
+			this.MenuItem_Tools.Image = ((System.Drawing.Image)(resources.GetObject("MenuItem_Tools.Image")));
+			this.MenuItem_Tools.Name = "MenuItem_Tools";
+			this.MenuItem_Tools.Size = new System.Drawing.Size(59, 20);
+			this.MenuItem_Tools.Text = "操作";
+			// 
+			// MenuItem_LibraryImport
+			// 
+			this.MenuItem_LibraryImport.Name = "MenuItem_LibraryImport";
+			this.MenuItem_LibraryImport.Size = new System.Drawing.Size(258, 22);
+			this.MenuItem_LibraryImport.Text = "iTunesからライブラリを取り込む";
+			this.MenuItem_LibraryImport.Click += new System.EventHandler(this.MainMenu_ImportLibrary);
+			// 
+			// MainMenuItem_RegisteriTunesLibrary
+			// 
+			this.MainMenuItem_RegisteriTunesLibrary.Name = "MainMenuItem_RegisteriTunesLibrary";
+			this.MainMenuItem_RegisteriTunesLibrary.Size = new System.Drawing.Size(258, 22);
+			this.MainMenuItem_RegisteriTunesLibrary.Text = "iTunesUtilsの内容をiTunesに登録する";
+			this.MainMenuItem_RegisteriTunesLibrary.Click += new System.EventHandler(this.MainMenu_RegisteriTunesLibrary);
+			// 
+			// toolStripSeparator1
+			// 
+			this.toolStripSeparator1.Name = "toolStripSeparator1";
+			this.toolStripSeparator1.Size = new System.Drawing.Size(255, 6);
+			// 
+			// MainMenuItem_ExportPlaylistToolStrip
+			// 
+			this.MainMenuItem_ExportPlaylistToolStrip.Name = "MainMenuItem_ExportPlaylistToolStrip";
+			this.MainMenuItem_ExportPlaylistToolStrip.Size = new System.Drawing.Size(258, 22);
+			this.MainMenuItem_ExportPlaylistToolStrip.Text = "iTunesからプレイリストを書き出す";
+			this.MainMenuItem_ExportPlaylistToolStrip.Click += new System.EventHandler(this.MainMenu_ExportPlaylist);
+			// 
+			// MainMenuItem_ImportPlaylistToolStrip
+			// 
+			this.MainMenuItem_ImportPlaylistToolStrip.Name = "MainMenuItem_ImportPlaylistToolStrip";
+			this.MainMenuItem_ImportPlaylistToolStrip.Size = new System.Drawing.Size(258, 22);
+			this.MainMenuItem_ImportPlaylistToolStrip.Text = "iTunesにプレイリストを登録する";
+			this.MainMenuItem_ImportPlaylistToolStrip.Click += new System.EventHandler(this.MainMenu_ImportPlaylist);
 			// 
 			// ツールToolStripMenuItem
 			// 
@@ -351,50 +379,12 @@
 			this.ログToolStripMenuItem.Text = "ログ";
 			this.ログToolStripMenuItem.Click += new System.EventHandler(this.ログToolStripMenuItem_Click);
 			// 
-			// ツールToolStripMenuItem1
+			// Context_RegisterLibrary
 			// 
-			this.ツールToolStripMenuItem1.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.cSVに書き出しToolStripMenuItem,
-            this.リストの曲をインポートToolStripMenuItem,
-            this.toolStripSeparator1,
-            this.MenuItem_ExportPlaylistToolStrip,
-            this.プレイリストをインポートToolStripMenuItem});
-			this.ツールToolStripMenuItem1.Name = "ツールToolStripMenuItem1";
-			this.ツールToolStripMenuItem1.Size = new System.Drawing.Size(46, 20);
-			this.ツールToolStripMenuItem1.Text = "ツール";
-			// 
-			// cSVに書き出しToolStripMenuItem
-			// 
-			this.cSVに書き出しToolStripMenuItem.Name = "cSVに書き出しToolStripMenuItem";
-			this.cSVに書き出しToolStripMenuItem.Size = new System.Drawing.Size(188, 22);
-			this.cSVに書き出しToolStripMenuItem.Text = "CSVに書き出し";
-			this.cSVに書き出しToolStripMenuItem.Click += new System.EventHandler(this.cSVに書き出しToolStripMenuItem_Click);
-			// 
-			// リストの曲をインポートToolStripMenuItem
-			// 
-			this.リストの曲をインポートToolStripMenuItem.Name = "リストの曲をインポートToolStripMenuItem";
-			this.リストの曲をインポートToolStripMenuItem.Size = new System.Drawing.Size(188, 22);
-			this.リストの曲をインポートToolStripMenuItem.Text = "リストの曲をインポート";
-			this.リストの曲をインポートToolStripMenuItem.Click += new System.EventHandler(this.リストの曲をインポートToolStripMenuItem_Click);
-			// 
-			// toolStripSeparator1
-			// 
-			this.toolStripSeparator1.Name = "toolStripSeparator1";
-			this.toolStripSeparator1.Size = new System.Drawing.Size(185, 6);
-			// 
-			// MenuItem_ExportPlaylistToolStrip
-			// 
-			this.MenuItem_ExportPlaylistToolStrip.Name = "MenuItem_ExportPlaylistToolStrip";
-			this.MenuItem_ExportPlaylistToolStrip.Size = new System.Drawing.Size(188, 22);
-			this.MenuItem_ExportPlaylistToolStrip.Text = "プレイリストをエクスポート";
-			this.MenuItem_ExportPlaylistToolStrip.Click += new System.EventHandler(this.Menu_ExportPlaylist);
-			// 
-			// プレイリストをインポートToolStripMenuItem
-			// 
-			this.プレイリストをインポートToolStripMenuItem.Name = "プレイリストをインポートToolStripMenuItem";
-			this.プレイリストをインポートToolStripMenuItem.Size = new System.Drawing.Size(188, 22);
-			this.プレイリストをインポートToolStripMenuItem.Text = "プレイリストをインポート";
-			this.プレイリストをインポートToolStripMenuItem.Click += new System.EventHandler(this.MenuItem_ImportPlaylist);
+			this.Context_RegisterLibrary.Name = "Context_RegisterLibrary";
+			this.Context_RegisterLibrary.Size = new System.Drawing.Size(273, 22);
+			this.Context_RegisterLibrary.Text = "この曲をiTunesUtilsの内容で登録する";
+			this.Context_RegisterLibrary.Click += new System.EventHandler(this.この曲をiTunesUtilsの内容で登録し直すToolStripMenuItem_Click);
 			// 
 			// iTunesUtilityWindow
 			// 
@@ -440,7 +430,6 @@
 		private System.Windows.Forms.ColumnHeader columnHeader8;
 		private System.Windows.Forms.ColumnHeader columnHeader9;
 		private System.Windows.Forms.MenuStrip menuStrip1;
-		private System.Windows.Forms.ToolStripMenuItem ToolStripMenuItem;
 		private System.Windows.Forms.ColumnHeader columnHeader10;
 		private System.Windows.Forms.ColumnHeader columnHeader11;
 		private System.Windows.Forms.ColumnHeader columnRating;
@@ -461,13 +450,14 @@
 		private System.Windows.Forms.ToolStripMenuItem iTunesからこの曲を削除するToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem ログToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem ファイルを選択してアルバムアートを設定するToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem ツールToolStripMenuItem1;
-		private System.Windows.Forms.ToolStripMenuItem cSVに書き出しToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem リストの曲をインポートToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem 曲を追加するToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem MenuItem_ExportPlaylistToolStrip;
-		private System.Windows.Forms.ToolStripMenuItem プレイリストをインポートToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem MenuItem_Tools;
+		private System.Windows.Forms.ToolStripMenuItem MainMenuItem_RegisteriTunesLibrary;
+		//private System.Windows.Forms.ToolStripMenuItem 曲を追加するToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem MainMenuItem_ExportPlaylistToolStrip;
+		private System.Windows.Forms.ToolStripMenuItem MainMenuItem_ImportPlaylistToolStrip;
 		private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
+		private System.Windows.Forms.ToolStripMenuItem MenuItem_LibraryImport;
+		private System.Windows.Forms.ToolStripMenuItem Context_RegisterLibrary;
 	}
 }
 

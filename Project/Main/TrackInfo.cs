@@ -21,11 +21,18 @@ namespace iTunesUtility {
 
 		public int Duration;
 		public int PlayedCount;
-		public DateTime DateAdded;
-		public int DiskCount;
-		public int DiskNumber;
 
+		public int TrackCount;
+		public int TrackNumber;
+		public int DiscCount;
+		public int DiscNumber;
+
+		public int Year;
+
+		public DateTime DateAdded;
 		public DateTime ModificationDate;
+		public DateTime PlayedDate;
+
 		public int Rating;
 		public int AlbumRating;
 		public int AlbumRatingKind;
@@ -35,10 +42,7 @@ namespace iTunesUtility {
 		public int Size;
 
 		public string Time;
-		public int TrackCount;
-		public int TrackNumber;
-		public int Year;
-
+		
 		public string Grouping;
 		public int VolumeAdjustment;
 		public string KindAsString;
@@ -48,12 +52,15 @@ namespace iTunesUtility {
 
 		public Modify ModifyFlag;
 
+		public bool Enabled;
+
+
 		string DiscString {
 			get {
-				if( DiskCount == 0 && DiskNumber==0 ) {
+				if( DiscCount == 0 && DiscNumber==0 ) {
 					return "";
 				}
-				return $"{DiskNumber}/{DiskCount}";
+				return $"{DiscNumber}/{DiscCount}";
 			}
 		}
 		string TrackString {
@@ -111,6 +118,7 @@ namespace iTunesUtility {
 				};
 		}
 
+		//public TrackInfo() { }
 
 		public TrackInfo( int index, IITTrack track2 ) {
 			IITFileOrCDTrack track = (IITFileOrCDTrack) track2;
@@ -124,10 +132,12 @@ namespace iTunesUtility {
 			this.Duration = track.Duration;
 			this.PlayedCount = track.PlayedCount;
 			this.DateAdded = track.DateAdded;
-			this.DiskCount = track.DiscCount;
-			this.DiskNumber = track.DiscNumber;
+			this.DiscCount = track.DiscCount;
+			this.DiscNumber = track.DiscNumber;
 
 			this.ModificationDate = track.ModificationDate;
+			this.PlayedDate = track.PlayedDate;
+
 			this.Rating = track.Rating;
 			this.AlbumRating = track.AlbumRating;
 			this.AlbumRatingKind = (int)track.AlbumRatingKind;
@@ -148,6 +158,8 @@ namespace iTunesUtility {
 			this.Genre = track.Genre;
 
 			this.ArtworkNum = track.Artwork.Count;
+
+			this.Enabled = track.Enabled;
 		}
 	}
 }

@@ -36,7 +36,11 @@ namespace iTunesUtility {
 			}
 		}
 
-
+		public static string s_iTunesLibraryPath2 {
+			get {
+				return $"{Helper.m_appPath}\\iTunes Library.csv";
+			}
+		}
 		/// <summary>
 		/// 
 		/// </summary>
@@ -47,10 +51,172 @@ namespace iTunesUtility {
 		}
 
 
-		void WriteMusicLibraryJson() {
-			Helper.WriteJson( m_TrackInfo, m_iTunesLibraryPath );
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		void Form1_Load( object a1, EventArgs a2 ) {
+			Font = SystemFonts.IconTitleFont;
+
+			m_listView1.SetDoubleBuffered( true );
+			listViewItemCollection = new ListView.ListViewItemCollection( m_listView1 );
+			listViewItemSelection = new ListView.SelectedIndexCollection( m_listView1 );
+			m_listView1.RetrieveVirtualItem += new RetrieveVirtualItemEventHandler( ( s, e ) => {
+				if( _item == null ) return;
+				e.Item = _item[ e.ItemIndex ];
+			} );
+
+			ShowStatusbarControl( false );
+			m_CtrlColor = ToolStripMenuItem1.BackColor;
+
+			//var b = Helper.ReadJson<TrackInfo[]>( ref m_TrackInfo, m_iTunesLibraryPath );
+			var b = ReadLibrary();
+
+			if( b ) {
+				ApplyTrackInfoToListView();
+			}
+			else {
+				iTunesHelper.Attach();
+				Task.Run( () => ImportMusicLibrary() );
+			}
+
+			Helper.ReadJson( ref m_config, Helper.m_configPath );
+			m_config.RollbackWindow( this );
+
+			iTunesActiveEvent();
+
+			SetCheckedFillter( 0 );
+
+			if( string.IsNullOrEmpty( m_config.playlistFolder ) ) {
+				m_config.playlistFolder = Directory.GetCurrentDirectory();
+			}
+			m_progressbar = new Progressbar( this, toolStripProgressBar1 );
+
+			Win32.SHSTOCKICONINFO sii = new Win32.SHSTOCKICONINFO();
+			sii.cbSize = Marshal.SizeOf( sii );
+
+			Win32.SHGetStockIconInfo( Win32.SIID_SHIELD, Win32.SHGSI_ICON | Win32.SHGSI_SMALLICON, ref sii );
+			if( sii.hIcon != IntPtr.Zero ) {
+				Icon shieldIcon = Icon.FromHandle( sii.hIcon );
+				MainMenuItem_ImportPlaylistToolStrip.Image = shieldIcon.ToBitmap();
+				Context_RegisterLibrary.Image = shieldIcon.ToBitmap();
+			}
+
+			////Debug.Log( Helper.IsAdministrator().ToString() );
+			if( !Helper.IsAdministrator() ) {
+				MainMenuItem_ImportPlaylistToolStrip.Visible = false;
+				Context_RegisterLibrary.Visible = false;
+			}
+			//Win32.TOKEN_ELEVATION_TYPE tet = Win32.GetTokenElevationType();
+			//if( tet == Win32.TOKEN_ELEVATION_TYPE.TokenElevationTypeDefault ) {
+			//	Debug.Log( "UACが無効になっているか、標準ユーザーです" );
+			//}
+			//else if( tet == Win32.TOKEN_ELEVATION_TYPE.TokenElevationTypeFull ) {
+			//	Debug.Log( "UACが有効になっており、昇格しています" );
+			//}
+			//else if( tet == Win32.TOKEN_ELEVATION_TYPE.TokenElevationTypeLimited ) {
+			//	Debug.Log( "UACが有効になっており、昇格していません" );
+			//}
 		}
 
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		void Form1_FormClosing( object sender, FormClosingEventArgs e ) {
+			iTunesHelper.Dettach();
+
+			m_config.BackupWindow( this );
+			Helper.WriteJson( m_config, Helper.m_configPath );
+		}
+
+
+		void splitContainer1_SizeChanged( object sender, EventArgs e ) {
+			try {
+				splitContainer1.SplitterDistance = 0;
+			}
+			catch( Exception ex ) {
+				Log.Exception( ex );
+			}
+		}
+
+
+
+		void WriteMusicLibraryJson() {
+			//Helper.WriteJson( m_TrackInfo, m_iTunesLibraryPath );
+			using( var st = new StreamWriter( s_iTunesLibraryPath2 ) ) {
+				st.WriteLine( $"Artist\tAlbum\tName\tTrackNumber\tTrackCount\tDiscNumber\tDiscCount\tYear\tGenre\tTime\tRating\tAlbumRating\tAlbumRatingKind\tratingKind\tGrouping\tComment\tPlayedCount\tDateAdded\tModificationDate\tPlayedDate\tLocation\tEnabled" );
+				foreach( var p in m_TrackInfo ) {
+					st.WriteLine( $"{p.Artist}\t{p.Album}\t{p.Name}\t{p.TrackNumber}\t{p.TrackCount}\t{p.DiscNumber}\t{p.DiscCount}\t{p.Year}\t{p.Genre}\t{p.Time}\t{p.Rating}\t{p.AlbumRating}\t{p.AlbumRatingKind}\t{p.ratingKind}\t{Base64.Encode( p.Grouping )}\t{Base64.Encode( p.Comment )}\t{p.PlayedCount}\t{p.DateAdded}\t{p.ModificationDate}\t{p.PlayedDate}\t{p.Location}\t{p.Enabled}" );
+				}
+			}
+		}
+
+
+		/// <summary>
+		/// ライブラリ情報を読み込みます
+		/// </summary>
+		/// <returns>失敗時はfalse</returns>
+		public bool ReadLibrary(  ) {
+			if( !File.Exists( s_iTunesLibraryPath2 ) ) return false;
+			var readtext = File.ReadAllText( s_iTunesLibraryPath2 ).Split( new string[] { "\r\n" }, StringSplitOptions.None ).Where( x => !string.IsNullOrEmpty( x ) ).ToList();
+			readtext.RemoveAt( 0 );
+
+			m_TrackInfo = new TrackInfo[ readtext.Count ];
+
+			for( int i = 0; i < readtext.Count; i++ ) {
+				var s = readtext[ i ];
+				var ss = s.Split( '\t' );
+
+				var t = new TrackInfo();
+				t.Index = i;
+				t.Artist = ss[ 0 ];
+				t.Album = ss[ 1 ];
+				t.Name = ss[ 2 ];
+				t.TrackNumber = ss[ 3 ].toInt32();
+				t.TrackCount = ss[ 4 ].toInt32();
+				t.DiscNumber = ss[ 5 ].toInt32();
+				t.DiscCount = ss[ 6 ].toInt32();
+				t.Year = ss[ 7 ].toInt32();
+				t.Genre = ss[ 8 ];
+				t.Time = ss[ 9 ];
+				t.Rating = ss[ 10 ].toInt32();
+				t.AlbumRating = ss[ 11 ].toInt32();
+				t.AlbumRatingKind = ss[ 12 ].toInt32();
+				t.ratingKind = ss[ 13 ].toInt32();
+				t.Grouping = Base64.Decode( ss[ 14 ] );
+				t.Comment = Base64.Decode( ss[ 15 ] );
+				t.PlayedCount = ss[ 16 ].toInt32();
+				t.DateAdded = DateTime.Parse( ss[ 17 ] );
+				t.ModificationDate = DateTime.Parse( ss[ 18 ] );
+				t.PlayedDate = DateTime.Parse( ss[ 19 ] );
+				t.Location =  ss[ 20 ] ;
+				t.Enabled = bool.Parse( ss[ 21 ] );
+				m_TrackInfo[ i ] = t;
+			}
+
+			return true;
+		}
+
+
+		#region iTunesからライブラリを取り込む
+
+		/// <summary>
+		/// iTunesからライブラリを取り込む
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		async void MainMenu_ImportLibrary( object sender, EventArgs e ) {
+			//ToolStripMenuItem.Enabled = false;
+
+			await Task.Run( () => ImportMusicLibrary() );
+
+			// ボタン有効化
+			//ToolStripMenuItem.Enabled = true;
+		}
 
 		/// <summary>
 		/// iTuneから情報を取得します
@@ -58,7 +224,7 @@ namespace iTunesUtility {
 		void ImportMusicLibrary() {
 			iTunesHelper.Attach();
 
-			ShowStatusbarControl( true, "インポート中" );
+			ShowStatusbarControl( true, "ライブラリを取り込み中" );
 
 			TraverseLibrary();
 
@@ -70,42 +236,38 @@ namespace iTunesUtility {
 		}
 
 
+		void reg( int index, IITTrack tt ) {
+			m_TrackInfo[ index ] = new TrackInfo( index, tt );
+			m_progressbar.Next();
+
+			Marshal.ReleaseComObject( tt );
+		}
+
 		/// <summary>
 		/// ライブラリからトラック情報を取得する
 		/// </summary>
 		void TraverseLibrary() {
-			//var mainLibrary = iTunesHelper.GetApp().LibraryPlaylist;
-			//var tracks = mainLibrary.Tracks;
 			var numTracks = iTunesHelper.Tracks.Count;
-			//int i = 0;
-			//int m = tracks.Count;
 
 			m_TrackInfo = new TrackInfo[ numTracks ];
 
 			var sw = new System.Diagnostics.Stopwatch();
 			sw.Start();
 
-			float f = 100.0f / (float) ( numTracks );
-			float ff = 0.0f;
-			//*
-			Debug.Log( numTracks );
+			m_progressbar.Begin( numTracks );
+
 			int i = 0;
 			foreach( IITTrack t in iTunesHelper.Tracks ) {
+				// タスクに分割すると配列オーバーする
+				// iTunes.11 のやつだと 979番目に空トラックが発生する等正確に取得できないことがある
+				// コンパイラの不具合ようなきもするが、iTunesに多重アクセスするのがそもそもマズイかもしれない
+				//Task.Run( () => reg( i, t ) );
 
-				Debug.Log( t.Name );
-				m_TrackInfo[ i ] = new TrackInfo( i, t );
-				this.Invoke( new Action( () => {
-					//i++;
-					ff += f;
-					if( 100.0f < ff ) {
-						ff = 100.0f;
-					}
-					toolStripProgressBar1.Value = (int) ff;
-				} ) );
-
-				Marshal.ReleaseComObject( t );
+				reg( i, t );
 				i++;
+				Marshal.ReleaseComObject( t );
 			}
+
 			//Parallel.For( 0, numTracks, Helper.m_parallelOptions, cnt => {
 			//try {
 			//		//if( cnt == 0 ) return;
@@ -132,6 +294,8 @@ namespace iTunesUtility {
 			TimeSpan ts = sw.Elapsed;
 			Debug.Log( ts.ToString() );
 		}
+
+		#endregion
 
 
 		/// <summary>
@@ -191,95 +355,7 @@ namespace iTunesUtility {
 		}
 
 
-
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		private void Form1_Load( object a1, EventArgs a2 ) {
-			Font = SystemFonts.IconTitleFont;
-
-			m_listView1.SetDoubleBuffered( true );
-			listViewItemCollection = new ListView.ListViewItemCollection( m_listView1 );
-			listViewItemSelection = new ListView.SelectedIndexCollection( m_listView1 );
-			m_listView1.RetrieveVirtualItem += new RetrieveVirtualItemEventHandler( ( s, e ) => {
-				if( _item == null ) return;
-				e.Item = _item[ e.ItemIndex ];
-			} );
-
-			ShowStatusbarControl( false );
-			m_CtrlColor = ToolStripMenuItem1.BackColor;
-
-			var b = Helper.ReadJson<TrackInfo[]>( ref m_TrackInfo, m_iTunesLibraryPath );
-
-			if( b ) {
-				ApplyTrackInfoToListView();
-			}
-			else {
-				iTunesHelper.Attach();
-				Task.Run( () => ImportMusicLibrary() );
-			}
-
-			Helper.ReadJson( ref m_config, Helper.m_configPath );
-			m_config.RollbackWindow( this );
-
-			iTunesActiveEvent();
-
-			SetCheckedFillter( 0 );
-
-			if( string.IsNullOrEmpty( m_config.playlistFolder ) ) {
-				m_config.playlistFolder = Directory.GetCurrentDirectory();
-			}
-			m_progressbar = new Progressbar( this, toolStripProgressBar1 );
-
-			Debug.Log( "Starts" );
-		}
-
-
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		private void Form1_FormClosing( object sender, FormClosingEventArgs e ) {
-			iTunesHelper.Dettach();
-
-			m_config.BackupWindow( this );
-			Helper.WriteJson( m_config, Helper.m_configPath );
-		}
-
-
-		async void ToolStripMenuItem_Click( object sender, EventArgs e ) {
-			ToolStripMenuItem.Enabled = false;
-
-			await Task.Run( () => ImportMusicLibrary() );
-
-			// ボタン有効化
-			ToolStripMenuItem.Enabled = true;
-		}
-
-		void splitContainer1_SizeChanged( object sender, EventArgs e ) {
-			try {
-				splitContainer1.SplitterDistance = 0;
-			}
-			catch( Exception ex ) {
-				Log.Exception( ex );
-			}
-		}
-
-		//int selectIndex {
-		//	get {
-		//		if( listViewItemSelection.Count > 0 ) {
-		//			foreach( int index in listViewItemSelection ) {
-		//				return index;
-		//			}
-		//		}
-		//		return 0;
-		//	}
-		//}
-
-
+		
 		/// <summary>
 		/// 現在選択されている項目をm_TrackInfoでのインデックス番号として取得する
 		/// </summary>
@@ -301,12 +377,12 @@ namespace iTunesUtility {
 			Invoke( new Action( () => {
 				if( iTunesHelper.IsAlive() ) {
 					ToolStripMenuItem1.Text = "iTunes 接続中";
-					ToolStripMenuItem.Enabled = true;
+					//MenuItem_Tools.Enabled = true;
 					ToolStripMenuItem1.BackColor = Color.LightGreen;
 				}
 				else {
 					ToolStripMenuItem1.Text = "iTunes 接続する";
-					ToolStripMenuItem.Enabled = false;
+					//MenuItem_Tools.Enabled = false;
 					ToolStripMenuItem1.BackColor = m_CtrlColor;
 				}
 			} ) );
@@ -328,7 +404,7 @@ namespace iTunesUtility {
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
-		private void m_listView1_ColumnClick( object sender, ColumnClickEventArgs e ) {
+		void m_listView1_ColumnClick( object sender, ColumnClickEventArgs e ) {
 			int clm = (int) e.Column;
 
 			Array.Sort( _item, ( x, y ) => {
@@ -344,11 +420,11 @@ namespace iTunesUtility {
 
 
 		/// <summary>
-		/// 
+		/// ダブルクリック再生
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
-		private void m_listView1_DoubleClick( object sender, EventArgs e ) {
+		void m_listView1_DoubleClick( object sender, EventArgs e ) {
 			iTunesHelper.Attach();
 			var idxs = MakeSelectIndexArray();
 			if( idxs.Length == 0 ) return;
@@ -363,9 +439,15 @@ namespace iTunesUtility {
 		}
 
 
-		private void ログToolStripMenuItem_Click( object sender, EventArgs e ) {
+		/// <summary>
+		/// ログ表示
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		void ログToolStripMenuItem_Click( object sender, EventArgs e ) {
 			LogWindow.Visible = true;
 		}
+
 
 		#region フィルター
 
@@ -395,27 +477,28 @@ namespace iTunesUtility {
 			SetCheckedFillter( 0 );
 		}
 
-		private void デッドリンクを検出する( object sender = null, EventArgs e = null ) {
+		void デッドリンクを検出する( object sender = null, EventArgs e = null ) {
 			ListViewItem[] _item2 = m_TrackInfo.Where( x => !File.Exists( x.Location ) ).Select( x => new ListViewItem( x.GetItemString() ) ).ToArray();
 			if( _item2.Length == 0 ) {
 				Debug.Log( "デッドリンクはありません" );
 			}
 			_item = _item2;
-			ArrayUtility.RemoveAt( ref _item, 0 );
+			//ArrayUtility.RemoveAt( ref _item, 0 );
 			m_listView1.VirtualListSize = _item.Length;
 			SetCheckedFillter( 1 );
+			Debug.Log( $"デッドリンク {_item.Length} 検出しました" );
 		}
 
-		private void 未設定のアートワークを検出する( object sender = null, EventArgs e = null ) {
+		void 未設定のアートワークを検出する( object sender = null, EventArgs e = null ) {
 			_item = m_TrackInfo.Where( x => x.ArtworkNum == 0 ).Select( x => new ListViewItem( x.GetItemString() ) ).ToArray();
-			ArrayUtility.RemoveAt( ref _item, 0 );
+			//ArrayUtility.RemoveAt( ref _item, 0 );
 			m_listView1.VirtualListSize = _item.Length;
 			SetCheckedFillter( 2 );
 		}
 
-		private void 不要なアルバムレーティングを検出する( object sender = null, EventArgs e = null ) {
+		void 不要なアルバムレーティングを検出する( object sender = null, EventArgs e = null ) {
 			_item = m_TrackInfo.Where( x => 5 < x.AlbumRating || x.AlbumRating == 0 ).Select( x => new ListViewItem( x.GetItemString() ) ).ToArray();
-			ArrayUtility.RemoveAt( ref _item, 0 );
+			//ArrayUtility.RemoveAt( ref _item, 0 );
 			m_listView1.VirtualListSize = _item.Length;
 			SetCheckedFillter( 3 );
 		}
@@ -429,14 +512,16 @@ namespace iTunesUtility {
 		/// <summary>
 		/// コマンド実行用の共通処理
 		/// </summary>
-		/// <param name="idxs"></param>
+		/// <param name="idxs">操作を行う要素番号の配列</param>
 		/// <param name="text"></param>
 		/// <param name="command"></param>
-		/// <param name="complete"></param>
-		/// <param name="parallel"></param>
-		/// <param name="force"></param>
+		/// <param name="complete">動作完了時に呼び出すアクション</param>
+		/// <param name="parallel">forの繰り返し処理をパラレルにするフラグ</param>
+		/// <param name="force">確認不要で実行するの強制フラグ</param>
 		async void Execute( int[] idxs, string text, Action<int> command, Action complete, bool parallel = false, bool force = false ) {
 			string aa = "";
+
+			// ダイアログ確認
 			if( force == false ) {
 				if( 30 < idxs.Length ) {
 					aa = $"{idxs.Length}曲を{text}\n\n{aa}\nよろしいですか？";
@@ -533,9 +618,6 @@ namespace iTunesUtility {
 		}
 
 
-
-
-
 		/// <summary>
 		/// 
 		/// </summary>
@@ -582,6 +664,7 @@ namespace iTunesUtility {
 			);
 		}
 
+
 		void ファイルを選択してアートワークを設定するToolStripMenuItem_Click( object sender, EventArgs e ) {
 			var idxs = MakeSelectIndexArray();
 			if( idxs.Length == 0 ) return;
@@ -615,64 +698,122 @@ namespace iTunesUtility {
 			);
 		}
 
+		async void この曲をiTunesUtilsの内容で登録し直すToolStripMenuItem_Click( object sender, EventArgs e ) {
+			var idxs = MakeSelectIndexArray();
+			if( idxs.Length == 0 ) return;
 
-		void cSVに書き出しToolStripMenuItem_Click( object sender, EventArgs e ) {
-			//Debug.Log(123);
-
-			//SaveFileDialogクラスのインスタンスを作成
-			SaveFileDialog sfd = new SaveFileDialog();
-
-			//はじめのファイル名を指定する
-			//はじめに「ファイル名」で表示される文字列を指定する
-			sfd.FileName = "新しいファイル.csv";
-			//はじめに表示されるフォルダを指定する
-			sfd.InitialDirectory = @"C:\";
-			//[ファイルの種類]に表示される選択肢を指定する
-			//指定しない（空の文字列）の時は、現在のディレクトリが表示される
-			sfd.Filter = "CSVファイル(*.csv)|*.csv|すべてのファイル(*.*)|*.*";
-			//[ファイルの種類]ではじめに選択されるものを指定する
-			//2番目の「すべてのファイル」が選択されているようにする
-			sfd.FilterIndex = 2;
-			//タイトルを設定する
-			sfd.Title = "保存先のファイルを選択してください";
-			//ダイアログボックスを閉じる前に現在のディレクトリを復元するようにする
-			sfd.RestoreDirectory = true;
-			//既に存在するファイル名を指定したとき警告する
-			//デフォルトでTrueなので指定する必要はない
-			sfd.OverwritePrompt = true;
-			//存在しないパスが指定されたとき警告を表示する
-			//デフォルトでTrueなので指定する必要はない
-			sfd.CheckPathExists = true;
-
-			//ダイアログを表示する
-			if( sfd.ShowDialog() == DialogResult.OK ) {
-				//OKボタンがクリックされたとき、選択されたファイル名を表示する
-				Console.WriteLine( sfd.FileName );
-
-				using( var st = new System.IO.StreamWriter( sfd.FileName ) ) {
-					//foreach(  ) {
-					st.WriteLine( $"Artist\tAlbum\tName\tDiskCount\tDiskNumber\tTrackCount\tTrackNumber\tYear\tRating\tAlbumRating\tAlbumRatingKind\tratingKind\tSampleRate\tSize\tComment\tDuration\tPlayedCount\tDateAdded\t" );
-					for( int i = 1; i < m_TrackInfo.Length; i++ ) {
-						var p = m_TrackInfo[ i ];
-						st.WriteLine( $"{p.Artist}\t{p.Album}\t{p.Name}\t{p.DiskCount}\t{p.DiskNumber}\t{p.TrackCount}\t{p.TrackNumber}\t{p.Year}\t{p.Rating}\t{p.AlbumRating}\t{p.AlbumRatingKind}\t{p.ratingKind}\t{p.SampleRate}\t{p.Size}\t{p.Comment}\t{p.Duration}\t{p.PlayedCount}\t{p.DateAdded}\t" );
-					}
-				}
+			TrackInfo[] tt = new TrackInfo[ idxs.Length ];
+			for( int i = 0; i < idxs.Length; i++ ) {
+				tt[ i ] = m_TrackInfo[ idxs[ i ] ];
 			}
+			
+			await Task.Run( () => ImportLabrary( tt ) );
+		}
+
+		//async void 曲を追加するToolStripMenuItem_Click( object sender, EventArgs e ) {
+		//	
+		//	
+
+		//	await Task.Run( () => BBB( idxs ) );
+		//}
+		//void BBB( int[] idxs ) {
+		//	iTunesHelper.Attach();
+		//	ShowStatusbarControl( true, "インポート中" );
+		//	var tnow = DateTime.Now;
+
+		//	var sw = new System.Diagnostics.Stopwatch();
+		//	sw.Start();
+
+		//	float f = 100.0f / (float) ( m_TrackInfo.Length );
+		//	float ff = 0.0f;
+		//	for( int i = 0; i < idxs.Length; i++ ) {
+		//		var cur = m_TrackInfo[ idxs[ i ] ];
+		//		try {
+		//			Win32.SetNowDateTime( cur.DateAdded );
+		//			if( !File.Exists( cur.Location ) ) {
+		//				Log.Error( $"Index: {i}: {cur.Name}: {cur.Album}: {cur.Artist}: {cur.Location}: ファイルが存在しない" );
+
+		//				continue;
+		//			}
+
+		//			var op = iTunesHelper.mainLibrary.AddFile( cur.Location );
+		//			while( op.InProgress ) {
+		//				Thread.Sleep( 100 );
+		//				//Debug.Log( "op.InProgress" );
+		//			}
+		//			var tracks = op.Tracks;
+		//			//var tt = op.Tracks[0] as IITFileOrCDTrack;
+		//			foreach( IITFileOrCDTrack tt in tracks ) {
+
+		//				tt.Rating = cur.Rating;
+		//				tt.AlbumRating = cur.AlbumRating;
+		//				//tt.AlbumRatingKind = cur.AlbumRatingKind;
+		//				tt.Rating = cur.Rating;
+		//				tt.PlayedCount = cur.PlayedCount;
+
+		//				tt.Comment = cur.Comment;
+		//				tt.Grouping = cur.Grouping;
+
+		//				Marshal.ReleaseComObject( tt );
+		//			}
+
+		//			Marshal.ReleaseComObject( tracks );
+		//			this.Invoke( new Action( () => {
+		//				//i++;
+		//				ff += f;
+		//				if( 100.0f < ff ) {
+		//					ff = 100.0f;
+		//				}
+		//				toolStripProgressBar1.Value = (int) ff;
+		//			} ) );
+		//		}
+		//		catch( System.NullReferenceException ne ) {
+		//			Log.Error( $"Index: {i}: {cur.Name}: {cur.Album}: {cur.Artist}: {cur.Location}" );
+		//			Log.Exception( ne );
+		//			Thread.Sleep( 1000 );
+		//		}
+		//		catch( Exception e ) {
+		//			Log.Error( $"Index: {i}: {cur.Name}: {cur.Album}: {cur.Artist}: {cur.Location}" );
+		//			Log.Exception( e );
+		//			Thread.Sleep( 1000 );
+		//			continue;
+		//		}
+		//	}
+		//	Win32.SetNowDateTime( tnow );
+		//	ShowStatusbarControl( false );
+
+		//	sw.Stop();
+		//	TimeSpan ts = sw.Elapsed;
+		//	Debug.Log( ts.ToString() );
+		//}
+
+		#endregion
+
+
+
+		#region メニューコマンド iTunesUtilsの内容をiTunesに登録する
+
+		/// <summary>
+		/// iTunesUtilsの内容をiTunesに登録する
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		async void MainMenu_RegisteriTunesLibrary( object sender, EventArgs e ) {
+			await Task.Run( () => ImportLabrary( m_TrackInfo ) );
 		}
 
 
-		void AAA() {
+		void ImportLabrary( TrackInfo[] tinfo ) {
 			iTunesHelper.Attach();
-			ShowStatusbarControl( true, "インポート中" );
+			ShowStatusbarControl( true, "ライブラリ登録中" );
 			var tnow = DateTime.Now;
 
 			var sw = new System.Diagnostics.Stopwatch();
 			sw.Start();
 
-			float f = 100.0f / (float) ( m_TrackInfo.Length );
-			float ff = 0.0f;
-			for( int i = 0; i < m_TrackInfo.Length; ) {
-				var cur = m_TrackInfo[ i ];
+			m_progressbar.Begin( tinfo.Length );
+			for( int i = 0; i < tinfo.Length; ) {
+				var cur = tinfo[ i ];
 				try {
 
 					Win32.SetNowDateTime( cur.DateAdded );
@@ -685,33 +826,27 @@ namespace iTunesUtility {
 					var op = iTunesHelper.mainLibrary.AddFile( cur.Location );
 					while( op.InProgress ) {
 						Thread.Sleep( 100 );
-						//Debug.Log( "op.InProgress" );
 					}
 					var tracks = op.Tracks;
 					//var tt = op.Tracks[0] as IITFileOrCDTrack;
+					Debug.Log( $"DateAdded: {cur.Location}" );
 					foreach( IITFileOrCDTrack tt in tracks ) {
-
+						tt.Enabled = cur.Enabled;
 						tt.Rating = cur.Rating;
 						tt.AlbumRating = cur.AlbumRating;
 						//tt.AlbumRatingKind = cur.AlbumRatingKind;
 						tt.Rating = cur.Rating;
 						tt.PlayedCount = cur.PlayedCount;
-
-						tt.Comment = cur.Comment;
+						tt.PlayedDate = cur.PlayedDate;
+						//tt.ModificationDate = cur.ModificationDate;
+						//tt.Comment = cur.Comment;
 						tt.Grouping = cur.Grouping;
 
 						Marshal.ReleaseComObject( tt );
 					}
 
 					Marshal.ReleaseComObject( tracks );
-					this.Invoke( new Action( () => {
-						//i++;
-						ff += f;
-						if( 100.0f < ff ) {
-							ff = 100.0f;
-						}
-						toolStripProgressBar1.Value = (int) ff;
-					} ) );
+					m_progressbar.Next();
 				}
 				catch( System.NullReferenceException ne ) {
 				}
@@ -731,144 +866,74 @@ namespace iTunesUtility {
 			Debug.Log( ts.ToString() );
 		}
 
+		#endregion
 
-		async void リストの曲をインポートToolStripMenuItem_Click( object sender, EventArgs e ) {
-			//
 
-			await Task.Run( () => AAA() );
-		}
+		#region メニューコマンド iTunesからプレイリストを書き出す
 
-		
-
-		void BBB( int[] idxs ) {
-			iTunesHelper.Attach();
-			ShowStatusbarControl( true, "インポート中" );
-			var tnow = DateTime.Now;
-
-			var sw = new System.Diagnostics.Stopwatch();
-			sw.Start();
-
-			float f = 100.0f / (float) ( m_TrackInfo.Length );
-			float ff = 0.0f;
-			for( int i = 0; i < idxs.Length; i++ ) {
-				var cur = m_TrackInfo[ idxs[ i ] ];
-				try {
-					Win32.SetNowDateTime( cur.DateAdded );
-					if( !File.Exists( cur.Location ) ) {
-						Log.Error( $"Index: {i}: {cur.Name}: {cur.Album}: {cur.Artist}: {cur.Location}: ファイルが存在しない" );
-
-						continue;
-					}
-
-					var op = iTunesHelper.mainLibrary.AddFile( cur.Location );
-					while( op.InProgress ) {
-						Thread.Sleep( 100 );
-						//Debug.Log( "op.InProgress" );
-					}
-					var tracks = op.Tracks;
-					//var tt = op.Tracks[0] as IITFileOrCDTrack;
-					foreach( IITFileOrCDTrack tt in tracks ) {
-
-						tt.Rating = cur.Rating;
-						tt.AlbumRating = cur.AlbumRating;
-						//tt.AlbumRatingKind = cur.AlbumRatingKind;
-						tt.Rating = cur.Rating;
-						tt.PlayedCount = cur.PlayedCount;
-
-						tt.Comment = cur.Comment;
-						tt.Grouping = cur.Grouping;
-
-						Marshal.ReleaseComObject( tt );
-					}
-
-					Marshal.ReleaseComObject( tracks );
-					this.Invoke( new Action( () => {
-						//i++;
-						ff += f;
-						if( 100.0f < ff ) {
-							ff = 100.0f;
-						}
-						toolStripProgressBar1.Value = (int) ff;
-					} ) );
-				}
-				catch( System.NullReferenceException ne ) {
-					Log.Error( $"Index: {i}: {cur.Name}: {cur.Album}: {cur.Artist}: {cur.Location}" );
-					Log.Exception( ne );
-					Thread.Sleep( 1000 );
-				}
-				catch( Exception e ) {
-					Log.Error( $"Index: {i}: {cur.Name}: {cur.Album}: {cur.Artist}: {cur.Location}" );
-					Log.Exception( e );
-					Thread.Sleep( 1000 );
-					continue;
-				}
-			}
-			Win32.SetNowDateTime( tnow );
-			ShowStatusbarControl( false );
-
-			sw.Stop();
-			TimeSpan ts = sw.Elapsed;
-			Debug.Log( ts.ToString() );
-		}
-
-		async void 曲を追加するToolStripMenuItem_Click( object sender, EventArgs e ) {
-			var idxs = MakeSelectIndexArray();
-			if( idxs.Length == 0 ) return;
-
-			await Task.Run( () => BBB( idxs ) );
+		/// <summary>
+		/// iTunesからプレイリストを書き出す
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		async void MainMenu_ExportPlaylist( object sender, EventArgs e ) {
+			await Task.Run( () => ExportPlaylist() );
 		}
 
 
+		/// <summary>
+		/// 
+		/// </summary>
+		void ExportPlaylist() {
+			ShowStatusbarControl( true, "プレイリストを書き出し中" );
 
-
-		async void Menu_ExportPlaylist( object sender, EventArgs e ) {
-			await Task.Run( () => WritePlaylistAll() );
-		}
-
-
-		void WritePlaylistAll() {
 			var lsp = iTunesHelper.GetApp().LibrarySource.Playlists;
 			string outdate = DateTime.Now.ToString( "yyyyMMddHHmmss" );
 			string outPath = outdate;
 			var dirs = new List<string>();
 			Directory.CreateDirectory( outPath );
 
+			m_progressbar.Begin( lsp.Count );
+
 			foreach( IITPlaylist p in lsp ) {
 				try {
+					// いらなそうなので排除
 					if( p.Kind == ITPlaylistKind.ITPlaylistKindLibrary ) continue;
 
-					IITUserPlaylist upl = (IITUserPlaylist) p;
-					var parent = upl.get_Parent();
+					IITUserPlaylist p2 = (IITUserPlaylist) p;
+					var parent = p2.get_Parent();
 
 					try {
-						if( upl.SpecialKind == ITUserPlaylistSpecialKind.ITUserPlaylistSpecialKindFolder ) {
-							//Directory.Exists
+						// フォルダの時
+						if( p2.SpecialKind == ITUserPlaylistSpecialKind.ITUserPlaylistSpecialKindFolder ) {
 							Debug.Log( "ITUserPlaylistSpecialKindFolder: " );
 
 							if( parent == null ) {
 								if( 1 <= dirs.Count ) {
 									dirs.RemoveAt( dirs.Count - 1 );
 								}
-								dirs.Add( upl.Name );
+								dirs.Add( p2.Name );
 							}
 							else {
 								if( dirs[ dirs.Count - 1 ] != parent.Name ) {
 									dirs.RemoveAt( dirs.Count - 1 );
 								}
-								dirs.Add( upl.Name );
+								dirs.Add( p2.Name );
 							}
 
 							outPath = outdate + "/" + string.Join( "/", dirs );
 							Directory.CreateDirectory( outPath );
 							Debug.Log( outPath );
 						}
-						else if( upl.SpecialKind == ITUserPlaylistSpecialKind.ITUserPlaylistSpecialKindNone ) {
+						// 通常のプレイリストと思われる時
+						else if( p2.SpecialKind == ITUserPlaylistSpecialKind.ITUserPlaylistSpecialKindNone ) {
 							void updatePath( bool force = false ) {
 								if( force || dirs[ dirs.Count - 1 ] != parent.Name ) {
 									dirs.RemoveAt( dirs.Count - 1 );
 									outPath = outdate + "/" + string.Join( "/", dirs );
 								}
 							}
+
 							if( parent == null ) {
 								if( 1 <= dirs.Count ) {
 									updatePath( true );
@@ -878,16 +943,16 @@ namespace iTunesUtility {
 								updatePath();
 							}
 
-							Debug.Log( $"{upl.Name}: {upl.SpecialKind.ToString()}: {upl.Smart}" );
-							var aa = upl.Name.Replace( "/", "／" );
+							Debug.Log( $"{p2.Name}: {p2.SpecialKind.ToString()}: {p2.Smart}" );
+							var aa = p2.Name.Replace( "/", "／" );
 							var path = outPath + "/" + aa;
-							if( !upl.Smart ) {
+							if( !p2.Smart ) {
 								path = path + ".csv";
 							}
 							Debug.Log( path );
 
 							var tr = p.Tracks;
-							WritePlaylist( path, tr, upl.Smart );
+							WritePlaylistFile( path, tr, p2.Smart );
 							Marshal.ReleaseComObject( tr );
 						}
 					}
@@ -895,18 +960,23 @@ namespace iTunesUtility {
 						if( parent != null ) {
 							Marshal.ReleaseComObject( parent );
 						}
-						Marshal.ReleaseComObject( upl );
+						Marshal.ReleaseComObject( p2 );
 					}
 				}
 				finally {
+					m_progressbar.Next();
 					Marshal.ReleaseComObject( p );
 				}
 			}
 			Marshal.ReleaseComObject( lsp );
+
+			ShowStatusbarControl( false );
+
+			MessageBox.Show( $"{Directory.GetCurrentDirectory()}\\{outdate} に書き出しました。", "iTunesからプレイリストを書き出す" );
 		}
 
 
-		void WritePlaylist( string filepath, IITTrackCollection tracks, bool smartPlaylist ) {
+		void WritePlaylistFile( string filepath, IITTrackCollection tracks, bool smartPlaylist ) {
 			try {
 				using( var st = new StreamWriter( filepath ) ) {
 					//if( smartPlaylist ) return;
@@ -926,12 +996,22 @@ namespace iTunesUtility {
 			}
 		}
 
+		#endregion
 
-		async void MenuItem_ImportPlaylist( object sender, EventArgs e ) {
+
+		#region メニューコマンド iTunesにプレイリストを登録する
+
+
+		/// <summary>
+		/// iTunesにプレイリストを登録する
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		async void MainMenu_ImportPlaylist( object sender, EventArgs e ) {
 			var fbd = new FolderBrowserDialog();
 			fbd.SelectedPath = m_config.playlistFolder;
 			fbd.ShowNewFolderButton = false;
-			
+
 			if( fbd.ShowDialog() == DialogResult.OK ) {
 				m_config.playlistFolder = fbd.SelectedPath;
 				await Task.Run( () => ImportPlaylist() );
@@ -940,11 +1020,11 @@ namespace iTunesUtility {
 
 
 		/// <summary>
-		/// プレイリストをインポートします
+		/// iTunesにプレイリストを登録する
 		/// </summary>
 		void ImportPlaylist() {
 
-			ShowStatusbarControl( true, "プレイリストをインポート中" );
+			ShowStatusbarControl( true, "プレイリストを登録中" );
 
 			Directory.SetCurrentDirectory( m_config.playlistFolder.GetDirectory() );
 			
@@ -1046,8 +1126,9 @@ namespace iTunesUtility {
 			Marshal.ReleaseComObject( playlist );
 		}
 
-	}
-	
-	#endregion
 
+		#endregion
+
+		
+	}
 }
