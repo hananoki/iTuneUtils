@@ -71,9 +71,9 @@ namespace iTunesUtility {
 			m_CtrlColor = ToolStripMenuItem1.BackColor;
 
 			//var b = Helper.ReadJson<TrackInfo[]>( ref m_TrackInfo, m_iTunesLibraryPath );
-			var b = ReadLibrary();
+			m_TrackInfo = ReadLibrary( s_iTunesLibraryPath2 );
 
-			if( b ) {
+			if( 0 < m_TrackInfo.Length ) {
 				ApplyTrackInfoToListView();
 			}
 			else {
@@ -88,8 +88,8 @@ namespace iTunesUtility {
 
 			SetCheckedFillter( 0 );
 
-			if( string.IsNullOrEmpty( m_config.playlistFolder ) ) {
-				m_config.playlistFolder = Directory.GetCurrentDirectory();
+			if( string.IsNullOrEmpty( m_config.playlistFolderPath ) ) {
+				m_config.playlistFolderPath = Directory.GetCurrentDirectory();
 			}
 			m_progressbar = new Progressbar( this, toolStripProgressBar1 );
 
@@ -99,14 +99,17 @@ namespace iTunesUtility {
 			Win32.SHGetStockIconInfo( Win32.SIID_SHIELD, Win32.SHGSI_ICON | Win32.SHGSI_SMALLICON, ref sii );
 			if( sii.hIcon != IntPtr.Zero ) {
 				Icon shieldIcon = Icon.FromHandle( sii.hIcon );
-				MainMenuItem_ImportPlaylistToolStrip.Image = shieldIcon.ToBitmap();
+				MainMenuItem_RegisteriTunesLibrary.Image = shieldIcon.ToBitmap();
 				Context_RegisterLibrary.Image = shieldIcon.ToBitmap();
 			}
 
 			////Debug.Log( Helper.IsAdministrator().ToString() );
 			if( !Helper.IsAdministrator() ) {
-				MainMenuItem_ImportPlaylistToolStrip.Visible = false;
+				MainMenuItem_RegisteriTunesLibrary.Visible = false;
 				Context_RegisterLibrary.Visible = false;
+			}
+			else {
+				this.Text = this.Text + " : 管理者";
 			}
 			//Win32.TOKEN_ELEVATION_TYPE tet = Win32.GetTokenElevationType();
 			//if( tet == Win32.TOKEN_ELEVATION_TYPE.TokenElevationTypeDefault ) {
@@ -146,8 +149,11 @@ namespace iTunesUtility {
 
 
 		void WriteMusicLibraryJson() {
+			_WriteMusicLibraryJson( s_iTunesLibraryPath2 );
+		}
+		void _WriteMusicLibraryJson(string filepath) {
 			//Helper.WriteJson( m_TrackInfo, m_iTunesLibraryPath );
-			using( var st = new StreamWriter( s_iTunesLibraryPath2 ) ) {
+			using( var st = new StreamWriter( filepath ) ) {
 				st.WriteLine( $"Artist\tAlbum\tName\tTrackNumber\tTrackCount\tDiscNumber\tDiscCount\tYear\tGenre\tTime\tRating\tAlbumRating\tAlbumRatingKind\tratingKind\tGrouping\tComment\tPlayedCount\tDateAdded\tModificationDate\tPlayedDate\tLocation\tEnabled" );
 				foreach( var p in m_TrackInfo ) {
 					st.WriteLine( $"{p.Artist}\t{p.Album}\t{p.Name}\t{p.TrackNumber}\t{p.TrackCount}\t{p.DiscNumber}\t{p.DiscCount}\t{p.Year}\t{p.Genre}\t{p.Time}\t{p.Rating}\t{p.AlbumRating}\t{p.AlbumRatingKind}\t{p.ratingKind}\t{Base64.Encode( p.Grouping )}\t{Base64.Encode( p.Comment )}\t{p.PlayedCount}\t{p.DateAdded}\t{p.ModificationDate}\t{p.PlayedDate}\t{p.Location}\t{p.Enabled}" );
@@ -160,15 +166,16 @@ namespace iTunesUtility {
 		/// ライブラリ情報を読み込みます
 		/// </summary>
 		/// <returns>失敗時はfalse</returns>
-		public bool ReadLibrary(  ) {
-			if( !File.Exists( s_iTunesLibraryPath2 ) ) return false;
-			var readtext = File.ReadAllText( s_iTunesLibraryPath2 ).Split( new string[] { "\r\n" }, StringSplitOptions.None ).Where( x => !string.IsNullOrEmpty( x ) ).ToList();
-			readtext.RemoveAt( 0 );
+		public TrackInfo[] ReadLibrary( string filepath ) {
+			if( !File.Exists( filepath ) ) return new TrackInfo[ 0 ];
 
-			m_TrackInfo = new TrackInfo[ readtext.Count ];
+			var csv = File.ReadAllText( filepath ).Split( new string[] { "\r\n" }, StringSplitOptions.None ).Where( x => !string.IsNullOrEmpty( x ) ).ToList();
+			csv.RemoveAt( 0 );
 
-			for( int i = 0; i < readtext.Count; i++ ) {
-				var s = readtext[ i ];
+			var tt = new TrackInfo[ csv.Count ];
+
+			for( int i = 0; i < csv.Count; i++ ) {
+				var s = csv[ i ];
 				var ss = s.Split( '\t' );
 
 				var t = new TrackInfo();
@@ -195,12 +202,32 @@ namespace iTunesUtility {
 				t.PlayedDate = DateTime.Parse( ss[ 19 ] );
 				t.Location =  ss[ 20 ] ;
 				t.Enabled = bool.Parse( ss[ 21 ] );
-				m_TrackInfo[ i ] = t;
+
+				tt[ i ] = t;
 			}
 
-			return true;
+			return tt;
 		}
 
+		#region ファイルからライブラリを読み込む
+
+		void MainMenu_ImportLibraryFromFile( object sender, EventArgs e ) {
+			var ofd = new OpenFileDialog();
+			ofd.InitialDirectory = m_config.playlistFolderPath;
+			ofd.FilterIndex = 1;
+			ofd.Title = "ライブラリファイルを選択してください";
+			ofd.Filter = "CSV Files (*.csv)|*.csv";
+			ofd.RestoreDirectory = false;
+			ofd.CheckFileExists = true;
+			ofd.CheckPathExists = true;
+			if( ofd.ShowDialog() == DialogResult.Cancel ) return;
+
+			m_TrackInfo = ReadLibrary( ofd.FileName );
+
+			ApplyTrackInfoToListView();
+		}
+
+		#endregion
 
 		#region iTunesからライブラリを取り込む
 
@@ -304,7 +331,7 @@ namespace iTunesUtility {
 		void ApplyTrackInfoToListView() {
 			Invoke( new Action( () => {
 				Log.Info( $"トラック数: {m_TrackInfo.Length}" );
-
+				toolStripStatusLabel2.Text =$"{m_TrackInfo.Length} 曲:";
 				if( m_filterMode == 1 ) {
 					// デッドリンクを検出する
 					デッドリンクを検出する();
@@ -1009,11 +1036,11 @@ namespace iTunesUtility {
 		/// <param name="e"></param>
 		async void MainMenu_ImportPlaylist( object sender, EventArgs e ) {
 			var fbd = new FolderBrowserDialog();
-			fbd.SelectedPath = m_config.playlistFolder;
+			fbd.SelectedPath = m_config.playlistFolderPath;
 			fbd.ShowNewFolderButton = false;
 
 			if( fbd.ShowDialog() == DialogResult.OK ) {
-				m_config.playlistFolder = fbd.SelectedPath;
+				m_config.playlistFolderPath = fbd.SelectedPath;
 				await Task.Run( () => ImportPlaylist() );
 			}
 		}
@@ -1026,9 +1053,9 @@ namespace iTunesUtility {
 
 			ShowStatusbarControl( true, "プレイリストを登録中" );
 
-			Directory.SetCurrentDirectory( m_config.playlistFolder.GetDirectory() );
+			Directory.SetCurrentDirectory( m_config.playlistFolderPath.GetDirectory() );
 			
-			var files = Directory.EnumerateFiles( m_config.playlistFolder.GetBaseName(), "*", SearchOption.AllDirectories ).ToArray();
+			var files = Directory.EnumerateFiles( m_config.playlistFolderPath.GetBaseName(), "*", SearchOption.AllDirectories ).ToArray();
 
 			m_progressbar.Begin( files.Length );
 
@@ -1127,8 +1154,71 @@ namespace iTunesUtility {
 		}
 
 
+
 		#endregion
 
-		
+		async void iTunesUtilsのToolStripMenuItem_Click( object sender, EventArgs e ) {
+			var ofd = new OpenFileDialog();
+			ofd.InitialDirectory = m_config.playlistFolderPath;
+			ofd.FilterIndex = 1;
+			ofd.Title = "ライブラリファイルを選択してください";
+			ofd.Filter = "CSV Files (*.csv)|*.csv";
+			ofd.RestoreDirectory = false;
+			ofd.CheckFileExists = true;
+			ofd.CheckPathExists = true;
+			if( ofd.ShowDialog() == DialogResult.Cancel ) return;
+
+			await Task.Run( () => {
+				ShowStatusbarControl( true, "ライブラリをマージ中" );
+
+				var tt1 = new List<TrackInfo>( m_TrackInfo );
+				var tt2 = new List<TrackInfo>( ReadLibrary( ofd.FileName ) );
+				m_progressbar.Begin( tt1.Count );
+				
+				for( int i = 0; i < tt1.Count; i++ ) {
+					m_progressbar.Next();
+					var t1 = tt1[ i ];
+					for( int j = 0; j < tt2.Count; j++ ) {
+						var t2 = tt2[ j ];
+						if( t1.Location == t2.Location ) {
+							t1.DateAdded = t2.DateAdded;
+							if( string.IsNullOrEmpty( t1.Comment ) && !string.IsNullOrEmpty( t2.Comment ) ) {
+								t1.Comment = t2.Comment;
+							}
+							if( string.IsNullOrEmpty( t1.Grouping ) && !string.IsNullOrEmpty( t2.Grouping ) ) {
+								t1.Grouping = t2.Grouping;
+							}
+							tt1[ i ] = t1;
+							tt2.RemoveAt( j );
+							j -= 1;
+							break;
+						}
+					}
+				}
+				tt1.AddRange( tt2 );
+				//tt1.Sort( ( a, b ) => a.DateAdded.CompareTo( b.DateAdded ) );
+				m_TrackInfo = tt1.OrderBy( x => x.DateAdded )
+												 .ThenBy( x => x.Location ).ToArray();
+				//m_TrackInfo = tt1.ToArray();
+
+				ApplyTrackInfoToListView();
+				ShowStatusbarControl( false );
+			} );
+		}
+
+		private void ファイルにライブラリを書き出すToolStripMenuItem_Click( object sender, EventArgs e ) {
+			var dlg = new SaveFileDialog();
+			dlg.FileName = "iTunes Library " + DateTime.Now.ToString( "yyyyMMddHHmmss" )+".csv";
+			dlg.InitialDirectory = m_config.playlistFolderPath;
+			dlg.FilterIndex = 1;
+			dlg.Title = "保存先のファイルを選択してください";
+			dlg.Filter = "CSV Files (*.csv)|*.csv";
+			dlg.RestoreDirectory = false;
+			dlg.CheckFileExists = false;
+			dlg.CheckPathExists = false;
+			if( dlg.ShowDialog() == DialogResult.Cancel ) return;
+
+			_WriteMusicLibraryJson( dlg.FileName );
+		}
 	}
 }
